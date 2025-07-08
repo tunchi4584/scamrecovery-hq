@@ -80,32 +80,32 @@ export default function Contact() {
       icon: Phone,
       title: "Phone Support",
       description: "Speak directly with our recovery experts",
-      contact: "+1 (555) 123-4567",
-      action: "tel:+15551234567",
+      contact: "+1 (762) 203-5587",
+      action: "tel:+17622035587",
       availability: "24/7 Emergency Line"
     },
     {
       icon: MessageCircle,
       title: "WhatsApp",
       description: "Quick response via WhatsApp messaging",
-      contact: "+1 (234) 567-8900",
-      action: "https://wa.me/1234567890",
+      contact: "+1 (762) 203-5587",
+      action: "https://wa.me/17622035587",
       availability: "Usually responds in minutes"
     },
     {
       icon: MessageCircle,
       title: "Telegram",
       description: "Secure messaging on Telegram",
-      contact: "@scamrecovery",
-      action: "https://t.me/scamrecovery",
+      contact: "@Assetrecovery_HQ",
+      action: "https://t.me/Assetrecovery_HQ",
       availability: "Secure & encrypted"
     },
     {
       icon: Mail,
       title: "Email Support",
       description: "Detailed case information and documents",
-      contact: "help@scamrecovery.com",
-      action: "mailto:help@scamrecovery.com",
+      contact: "assetrecovery36@gmail.com",
+      action: "mailto:assetrecovery36@gmail.com",
       availability: "Response within 2 hours"
     }
   ];

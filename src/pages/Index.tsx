@@ -66,7 +66,7 @@ export default function Index() {
                     Free Case Review
                   </Button>
                 </Link>
-                <a href="tel:+15551234567">
+                <a href="tel:+17622035587">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4">
                     <Phone className="mr-2 h-5 w-5" />
                     Call Now
@@ -80,29 +80,29 @@ export default function Index() {
                 <h3 className="text-2xl font-bold mb-6">Quick Contact</h3>
                 <div className="space-y-4">
                   <a 
-                    href="https://wa.me/1234567890" 
+                    href="https://wa.me/17622035587" 
                     className="flex items-center space-x-3 p-4 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <MessageCircle className="h-6 w-6" />
-                    <span className="text-lg">WhatsApp: +1 (234) 567-8900</span>
+                    <span className="text-lg">WhatsApp: +1 (762) 203-5587</span>
                   </a>
                   <a 
-                    href="https://t.me/scamrecovery" 
+                    href="https://t.me/Assetrecovery_HQ" 
                     className="flex items-center space-x-3 p-4 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <MessageCircle className="h-6 w-6" />
-                    <span className="text-lg">Telegram: @scamrecovery</span>
+                    <span className="text-lg">Telegram: @Assetrecovery_HQ</span>
                   </a>
                   <a 
-                    href="mailto:help@scamrecovery.com" 
+                    href="mailto:assetrecovery36@gmail.com" 
                     className="flex items-center space-x-3 p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
                   >
                     <MessageCircle className="h-6 w-6" />
-                    <span className="text-lg">Email: help@scamrecovery.com</span>
+                    <span className="text-lg">Email: assetrecovery36@gmail.com</span>
                   </a>
                 </div>
               </div>

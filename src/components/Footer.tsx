@@ -19,7 +19,7 @@ export function Footer() {
             </p>
             <div className="flex space-x-4">
               <a 
-                href="https://wa.me/1234567890" 
+                href="https://wa.me/17622035587" 
                 className="bg-green-600 hover:bg-green-700 p-3 rounded-full transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -27,7 +27,7 @@ export function Footer() {
                 <MessageCircle className="h-5 w-5" />
               </a>
               <a 
-                href="https://t.me/scamrecovery" 
+                href="https://t.me/Assetrecovery_HQ" 
                 className="bg-blue-500 hover:bg-blue-600 p-3 rounded-full transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -55,11 +55,11 @@ export function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-blue-400" />
-                <span className="text-gray-300 text-lg">+1 (555) 123-4567</span>
+                <span className="text-gray-300 text-lg">+1 (762) 203-5587</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-blue-400" />
-                <span className="text-gray-300 text-lg">help@scamrecovery.com</span>
+                <span className="text-gray-300 text-lg">assetrecovery36@gmail.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-blue-400" />
