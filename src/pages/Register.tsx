@@ -19,7 +19,7 @@ export default function Register() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -47,18 +47,24 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const success = await register(formData.name, formData.email, formData.password);
-      if (success) {
+      const { error } = await signUp(formData.email, formData.password, formData.name);
+      if (error) {
+        toast({
+          title: "Registration Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
         toast({
           title: "Account Created",
-          description: "Welcome! Your account has been created successfully.",
+          description: "Please check your email to verify your account.",
         });
-        navigate('/dashboard');
+        navigate('/login');
       }
     } catch (error) {
       toast({
         title: "Registration Error",
-        description: "An error occurred. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -86,7 +92,6 @@ export default function Register() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Registration Form */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl">Create Your Account</CardTitle>
@@ -179,7 +184,6 @@ export default function Register() {
               </CardContent>
             </Card>
 
-            {/* Benefits */}
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-8">Why Create an Account?</h2>
               <div className="space-y-6">

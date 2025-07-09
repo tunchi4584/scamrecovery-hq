@@ -1,19 +1,36 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Shield, Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, Shield, User, LogOut } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isAdmin, logout } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleSignOut = async () => {
+    await signOut();
     navigate('/');
   };
+
+  const navigation = [
+    { name: 'Home', href: '/' },
+    { name: 'About', href: '/about' },
+    { name: 'Services', href: '/services' },
+    { name: 'Testimonials', href: '/testimonials' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Contact', href: '/contact' },
+  ];
 
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
@@ -22,117 +39,120 @@ export function Header() {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <Shield className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">ScamRecovery Pro</span>
+            <span className="text-xl font-bold text-gray-900">ScamRecovery Pro</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-              Home
-            </Link>
-            <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-              About
-            </Link>
-            <Link to="/services" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-              Services
-            </Link>
-            <Link to="/testimonials" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-              Testimonials
-            </Link>
-            <Link to="/blog" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-              Blog
-            </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-              Contact
-            </Link>
+          <nav className="hidden md:flex space-x-8">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
 
-          {/* Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Right side - Auth & Theme */}
+          <div className="flex items-center space-x-4">
+            <ThemeToggle />
+            
             {user ? (
               <div className="flex items-center space-x-4">
-                <Link to="/dashboard" className="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
-                  <User className="h-4 w-4" />
-                  <span>{user.name}</span>
+                {/* Dashboard Link */}
+                <Link to="/dashboard">
+                  <Button variant="outline" size="sm">
+                    Dashboard
+                  </Button>
                 </Link>
-                <Button variant="outline" onClick={handleLogout} className="flex items-center space-x-2">
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </Button>
-              </div>
-            ) : isAdmin ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/admin/dashboard" className="text-gray-700 hover:text-blue-600">
-                  Admin Panel
-                </Link>
-                <Button variant="outline" onClick={handleLogout}>
-                  Logout
-                </Button>
+
+                {/* User Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                      <User className="h-4 w-4" />
+                      <span className="hidden sm:inline">{profile?.name || 'User'}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                      <User className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
-              <>
+              <div className="flex items-center space-x-2">
                 <Link to="/login">
-                  <Button variant="outline">Login</Button>
+                  <Button variant="outline" size="sm">
+                    Sign In
+                  </Button>
                 </Link>
                 <Link to="/register">
-                  <Button>Get Started</Button>
+                  <Button size="sm">
+                    Sign Up
+                  </Button>
                 </Link>
-              </>
+              </div>
             )}
-          </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? (
+                <X className="h-6 w-6 text-gray-700" />
+              ) : (
+                <Menu className="h-6 w-6 text-gray-700" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t">
-            <div className="flex flex-col space-y-4">
-              <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">
-                Home
-              </Link>
-              <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium">
-                About
-              </Link>
-              <Link to="/services" className="text-gray-700 hover:text-blue-600 font-medium">
-                Services
-              </Link>
-              <Link to="/testimonials" className="text-gray-700 hover:text-blue-600 font-medium">
-                Testimonials
-              </Link>
-              <Link to="/blog" className="text-gray-700 hover:text-blue-600 font-medium">
-                Blog
-              </Link>
-              <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium">
-                Contact
-              </Link>
-              
-              {user ? (
-                <div className="pt-4 border-t">
-                  <Link to="/dashboard" className="block text-gray-700 hover:text-blue-600 font-medium mb-2">
+            <nav className="space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className="block px-3 py-2 text-gray-700 hover:text-blue-600 text-sm font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              {user && (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="block px-3 py-2 text-gray-700 hover:text-blue-600 text-sm font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
                     Dashboard
                   </Link>
-                  <Button variant="outline" onClick={handleLogout} className="w-full">
-                    Logout
-                  </Button>
-                </div>
-              ) : (
-                <div className="pt-4 border-t space-y-2">
-                  <Link to="/login" className="block">
-                    <Button variant="outline" className="w-full">Login</Button>
-                  </Link>
-                  <Link to="/register" className="block">
-                    <Button className="w-full">Get Started</Button>
-                  </Link>
-                </div>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-gray-700 hover:text-blue-600 text-sm font-medium"
+                  >
+                    Sign Out
+                  </button>
+                </>
               )}
-            </div>
+            </nav>
           </div>
         )}
       </div>

@@ -1,129 +1,153 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-interface User {
+interface UserProfile {
   id: string;
-  email: string;
   name: string;
-  balance: number;
-  cases: Case[];
+  email: string;
+  created_at: string;
 }
 
 interface Case {
   id: string;
   title: string;
-  status: 'Pending' | 'In Progress' | 'Resolved' | 'Closed';
-  submittedDate: string;
+  status: 'pending' | 'in_progress' | 'resolved' | 'closed';
   amount: number;
+  created_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  isAdmin: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
-  adminLogin: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
+  profile: UserProfile | null;
+  cases: Case[];
+  session: Session | null;
+  loading: boolean;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock data for demonstration
-const mockUsers: User[] = [
-  {
-    id: '1',
-    email: 'john@example.com',
-    name: 'John Smith',
-    balance: 2500,
-    cases: [
-      {
-        id: '1',
-        title: 'Investment Scam Recovery',
-        status: 'In Progress',
-        submittedDate: '2024-01-15',
-        amount: 5000
-      },
-      {
-        id: '2',
-        title: 'Romance Scam Case',
-        status: 'Resolved',
-        submittedDate: '2024-01-10',
-        amount: 2500
-      }
-    ]
-  }
-];
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [cases, setCases] = useState<Case[]>([]);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUserProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (data && !error) {
+      setProfile(data);
+    }
+  };
+
+  const fetchUserCases = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('cases')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (data && !error) {
+      setCases(data);
+    }
+  };
+
+  const refreshUserData = async () => {
+    if (user) {
+      await fetchUserProfile(user.id);
+      await fetchUserCases(user.id);
+    }
+  };
 
   useEffect(() => {
-    // Check for stored auth state
-    const storedUser = localStorage.getItem('user');
-    const storedAdmin = localStorage.getItem('isAdmin');
-    
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    if (storedAdmin) {
-      setIsAdmin(JSON.parse(storedAdmin));
-    }
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Defer data fetching to avoid blocking auth state changes
+          setTimeout(async () => {
+            await fetchUserProfile(session.user.id);
+            await fetchUserCases(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+          setCases([]);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        setTimeout(async () => {
+          await fetchUserProfile(session.user.id);
+          await fetchUserCases(session.user.id);
+        }, 0);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock authentication
-    const foundUser = mockUsers.find(u => u.email === email);
-    if (foundUser && password === 'password') {
-      setUser(foundUser);
-      localStorage.setItem('user', JSON.stringify(foundUser));
-      return true;
-    }
-    return false;
-  };
-
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    // Mock registration
-    const newUser: User = {
-      id: Date.now().toString(),
-      email,
-      name,
-      balance: 0,
-      cases: []
-    };
+  const signUp = async (email: string, password: string, name: string) => {
+    const redirectUrl = `${window.location.origin}/`;
     
-    mockUsers.push(newUser);
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    return true;
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          name: name
+        }
+      }
+    });
+    
+    return { error };
   };
 
-  const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    // Mock admin authentication
-    if (email === 'admin@scamrecovery.com' && password === 'admin123') {
-      setIsAdmin(true);
-      localStorage.setItem('isAdmin', 'true');
-      return true;
-    }
-    return false;
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    return { error };
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAdmin(false);
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAdmin');
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
   const value = {
     user,
-    isAdmin,
-    login,
-    register,
-    adminLogin,
-    logout,
-    isAuthenticated: !!user || isAdmin
+    profile,
+    cases,
+    session,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    refreshUserData
   };
 
   return (

@@ -15,7 +15,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -24,24 +24,24 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
         toast({
           title: "Login Successful",
           description: "Welcome back! Redirecting to your dashboard...",
         });
         navigate('/dashboard');
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       toast({
         title: "Login Error",
-        description: "An error occurred. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -120,14 +120,6 @@ export default function Login() {
                   <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">
                     Sign up here
                   </Link>
-                </p>
-              </div>
-
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Demo Credentials:</strong><br />
-                  Email: john@example.com<br />
-                  Password: password
                 </p>
               </div>
             </CardContent>
