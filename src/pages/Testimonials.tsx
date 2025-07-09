@@ -1,10 +1,10 @@
-
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Testimonials() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -19,7 +19,7 @@ export default function Testimonials() {
       rating: 5,
       date: "March 2024",
       testimonial: "I lost $15,000 to a fake investment platform that promised huge returns. I thought I'd never see that money again. ScamRecovery Pro not only got every penny back but did it in just 3 weeks. Their team was professional, kept me updated throughout the process, and truly cared about helping me. I can't thank them enough!",
-      avatar: "M"
+      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b647?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
       id: 2,
@@ -30,7 +30,7 @@ export default function Testimonials() {
       rating: 5,
       date: "February 2024",
       testimonial: "After being scammed out of $8,500 in what I thought was a genuine romantic relationship online, I was devastated. ScamRecovery Pro helped me understand it wasn't my fault and worked tirelessly to get my money back. They recovered the full amount and helped me report the scammer to authorities. Excellent service!",
-      avatar: "R"
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
       id: 3,
@@ -41,7 +41,7 @@ export default function Testimonials() {
       rating: 5,
       date: "January 2024",
       testimonial: "I invested $22,000 in what I believed was a legitimate cryptocurrency exchange. When I tried to withdraw my profits, they demanded more money and eventually disappeared. ScamRecovery Pro used advanced blockchain analysis to trace my funds and recovered 95% of my investment. Their expertise in crypto recovery is unmatched.",
-      avatar: "L"
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
       id: 4,
@@ -52,7 +52,7 @@ export default function Testimonials() {
       rating: 5,
       date: "April 2024",
       testimonial: "I received a call from someone claiming to be from Microsoft saying my computer was infected. They convinced me to give them remote access and pay $5,200 for 'protection services.' When I realized it was a scam, I contacted ScamRecovery Pro. They recovered my money and helped me secure my computer. Great team!",
-      avatar: "J"
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
       id: 5,
@@ -63,7 +63,7 @@ export default function Testimonials() {
       rating: 5,
       date: "March 2024",
       testimonial: "My small business was targeted by scammers who compromised our email and tricked us into wiring $12,800 to a fraudulent account. I thought the money was gone forever, but ScamRecovery Pro's international recovery team worked with banks across multiple countries to get our money back. They saved my business!",
-      avatar: "P"
+      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
       id: 6,
@@ -74,7 +74,7 @@ export default function Testimonials() {
       rating: 5,
       date: "February 2024",
       testimonial: "I was lured into a fake Forex trading platform that showed fake profits to get me to invest more. When I couldn't withdraw my $18,500, I knew I'd been scammed. ScamRecovery Pro's investigation team traced the money through multiple offshore accounts and recovered the full amount. Their persistence was incredible.",
-      avatar: "D"
+      avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     }
   ];
 
@@ -94,7 +94,7 @@ export default function Testimonials() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background dark:bg-gray-900">
       <Header />
       
       {/* Hero Section */}
@@ -113,13 +113,13 @@ export default function Testimonials() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl lg:text-4xl font-bold text-blue-600 mb-2">{stat.value}</div>
-                <div className="text-lg text-gray-600">{stat.label}</div>
+                <div className="text-lg text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -130,8 +130,8 @@ export default function Testimonials() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Featured Recovery Stories</h2>
-            <p className="text-xl text-gray-600">Real stories from real clients who got their money back</p>
+            <h2 className="text-4xl font-bold text-foreground dark:text-white mb-4">Featured Recovery Stories</h2>
+            <p className="text-xl text-muted-foreground">Real stories from real clients who got their money back</p>
           </div>
 
           <div className="relative">
@@ -146,29 +146,31 @@ export default function Testimonials() {
                   </div>
                 </div>
                 
-                <blockquote className="text-xl text-gray-700 leading-relaxed mb-8 text-center">
+                <blockquote className="text-xl text-muted-foreground leading-relaxed mb-8 text-center">
                   "{testimonials[currentIndex].testimonial}"
                 </blockquote>
                 
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-4">
-                    <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
-                      {testimonials[currentIndex].avatar}
-                    </div>
+                    <img 
+                      src={testimonials[currentIndex].avatar}
+                      alt={testimonials[currentIndex].name}
+                      className="w-16 h-16 rounded-full object-cover mr-4"
+                    />
                     <div className="text-left">
-                      <p className="font-bold text-xl text-gray-900">{testimonials[currentIndex].name}</p>
-                      <p className="text-gray-600">{testimonials[currentIndex].location}</p>
+                      <p className="font-bold text-xl text-foreground dark:text-white">{testimonials[currentIndex].name}</p>
+                      <p className="text-muted-foreground">{testimonials[currentIndex].location}</p>
                     </div>
                   </div>
                   
-                  <div className="flex justify-center space-x-6 text-sm text-gray-600">
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
+                  <div className="flex justify-center space-x-6 text-sm text-muted-foreground">
+                    <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full font-medium">
                       Recovered: {testimonials[currentIndex].amount}
                     </span>
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+                    <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full font-medium">
                       {testimonials[currentIndex].scamType}
                     </span>
-                    <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full font-medium">
+                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full font-medium">
                       {testimonials[currentIndex].date}
                     </span>
                   </div>
@@ -179,16 +181,16 @@ export default function Testimonials() {
             {/* Navigation Buttons */}
             <button
               onClick={prevTestimonial}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-6 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors"
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-6 bg-white dark:bg-gray-800 shadow-lg rounded-full p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <ChevronLeft className="h-6 w-6 text-gray-600" />
+              <ChevronLeft className="h-6 w-6 text-gray-600 dark:text-gray-300" />
             </button>
             
             <button
               onClick={nextTestimonial}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-6 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors"
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-6 bg-white dark:bg-gray-800 shadow-lg rounded-full p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <ChevronRight className="h-6 w-6 text-gray-600" />
+              <ChevronRight className="h-6 w-6 text-gray-600 dark:text-gray-300" />
             </button>
           </div>
 
@@ -199,7 +201,7 @@ export default function Testimonials() {
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`w-3 h-3 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+                  index === currentIndex ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               />
             ))}
@@ -208,11 +210,11 @@ export default function Testimonials() {
       </section>
 
       {/* All Testimonials Grid */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">More Success Stories</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <h2 className="text-4xl font-bold text-foreground dark:text-white mb-6">More Success Stories</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Every recovery is a victory. Here are more stories from clients who trusted us to help them get their money back.
             </p>
           </div>
@@ -227,28 +229,30 @@ export default function Testimonials() {
                     ))}
                   </div>
                   
-                  <p className="text-gray-700 mb-6 leading-relaxed line-clamp-4">
+                  <p className="text-muted-foreground mb-6 leading-relaxed line-clamp-4">
                     "{testimonial.testimonial.substring(0, 150)}..."
                   </p>
                   
                   <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-                      {testimonial.avatar}
-                    </div>
+                    <img 
+                      src={testimonial.avatar}
+                      alt={testimonial.name}
+                      className="w-12 h-12 rounded-full object-cover mr-4"
+                    />
                     <div>
-                      <p className="font-semibold text-lg text-gray-900">{testimonial.name}</p>
-                      <p className="text-gray-600">{testimonial.location}</p>
+                      <p className="font-semibold text-lg text-foreground dark:text-white">{testimonial.name}</p>
+                      <p className="text-muted-foreground">{testimonial.location}</p>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Amount Recovered:</span>
+                      <span className="text-sm text-muted-foreground">Amount Recovered:</span>
                       <span className="font-bold text-green-600">{testimonial.amount}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Case Type:</span>
-                      <span className="text-sm font-medium text-gray-900">{testimonial.scamType}</span>
+                      <span className="text-sm text-muted-foreground">Case Type:</span>
+                      <span className="text-sm font-medium text-foreground dark:text-white">{testimonial.scamType}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -267,12 +271,16 @@ export default function Testimonials() {
             Don't let scammers keep what's rightfully yours.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
-              Get Free Case Review
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4">
-              Call Now: (555) 123-4567
-            </Button>
+            <Link to="/#free-review">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
+                Get Free Case Review
+              </Button>
+            </Link>
+            <a href="tel:+17622035587">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4">
+                Call Now: +1 (762) 203-5587
+              </Button>
+            </a>
           </div>
         </div>
       </section>

@@ -45,7 +45,7 @@ export default function Index() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background dark:bg-gray-900">
       <Header />
       
       {/* Hero Section */}
@@ -61,11 +61,11 @@ export default function Index() {
                 We've helped thousands recover their stolen funds with our expert team.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="#free-review">
+                <a href="#free-review">
                   <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
                     Free Case Review
                   </Button>
-                </Link>
+                </a>
                 <a href="tel:+17622035587">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4">
                     <Phone className="mr-2 h-5 w-5" />
@@ -112,7 +112,7 @@ export default function Index() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -120,8 +120,8 @@ export default function Index() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full mb-4">
                   <stat.icon className="h-8 w-8" />
                 </div>
-                <div className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">{stat.value}</div>
-                <div className="text-lg text-gray-600">{stat.label}</div>
+                <div className="text-3xl lg:text-4xl font-bold text-foreground dark:text-white mb-2">{stat.value}</div>
+                <div className="text-lg text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -132,10 +132,10 @@ export default function Index() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-foreground dark:text-white mb-6">
               How We Can Help You
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Our experienced team specializes in recovering funds from various types of scams.
               We work tirelessly to get your money back.
             </p>
@@ -162,8 +162,8 @@ export default function Index() {
               <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-8 text-center">
                   <div className="text-4xl mb-4">{service.icon}</div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{service.title}</h3>
-                  <p className="text-gray-600 text-lg leading-relaxed">{service.description}</p>
+                  <h3 className="text-2xl font-bold text-foreground dark:text-white mb-4">{service.title}</h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed">{service.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -181,13 +181,13 @@ export default function Index() {
       </section>
 
       {/* Free Case Review Form */}
-      <section id="free-review" className="py-20 bg-gray-50">
+      <section id="free-review" className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-foreground dark:text-white mb-6">
               Free Case Review
             </h2>
-            <p className="text-xl text-gray-600 leading-relaxed">
+            <p className="text-xl text-muted-foreground leading-relaxed">
               Get a professional assessment of your case at no cost. Our experts will review your situation and provide guidance.
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function Index() {
               <form onSubmit={handleReviewSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-foreground dark:text-white mb-2">
                       Full Name *
                     </label>
                     <Input
@@ -210,7 +210,7 @@ export default function Index() {
                     />
                   </div>
                   <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-foreground dark:text-white mb-2">
                       Email Address *
                     </label>
                     <Input
@@ -226,7 +226,7 @@ export default function Index() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-foreground dark:text-white mb-2">
                       Phone Number
                     </label>
                     <Input
@@ -234,11 +234,11 @@ export default function Index() {
                       value={reviewForm.phone}
                       onChange={(e) => setReviewForm({...reviewForm, phone: e.target.value})}
                       className="text-lg py-3"
-                      placeholder="Enter your phone number"
+                      placeholder="+1 (762) 203-5587"
                     />
                   </div>
                   <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-foreground dark:text-white mb-2">
                       Amount Lost (USD)
                     </label>
                     <Input
@@ -252,7 +252,7 @@ export default function Index() {
                 </div>
 
                 <div>
-                  <label className="block text-lg font-medium text-gray-700 mb-2">
+                  <label className="block text-lg font-medium text-foreground dark:text-white mb-2">
                     Type of Scam
                   </label>
                   <Input
@@ -265,7 +265,7 @@ export default function Index() {
                 </div>
 
                 <div>
-                  <label className="block text-lg font-medium text-gray-700 mb-2">
+                  <label className="block text-lg font-medium text-foreground dark:text-white mb-2">
                     Describe Your Case *
                   </label>
                   <Textarea
@@ -291,10 +291,10 @@ export default function Index() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-foreground dark:text-white mb-6">
               Success Stories
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Read how we've helped thousands of people recover their stolen funds and get their lives back on track.
             </p>
           </div>
@@ -307,16 +307,18 @@ export default function Index() {
                     <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                  "I lost $15,000 to a fake investment platform. ScamRecovery Pro helped me get every penny back in just 3 weeks. Their team was professional and kept me updated throughout the process."
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+                  "I lost $15,000 to a fake investment platform. ScamRecovery Pro helped me get every penny back in just 3 days. Their team was professional and kept me updated throughout the process."
                 </p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    M
-                  </div>
+                  <img 
+                    src="https://images.unsplash.com/photo-1494790108755-2616b612b647?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
+                    alt="Margaret S."
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
                   <div className="ml-4">
-                    <p className="font-semibold text-lg">Margaret S.</p>
-                    <p className="text-gray-600">Recovered $15,000</p>
+                    <p className="font-semibold text-lg text-foreground dark:text-white">Margaret S.</p>
+                    <p className="text-muted-foreground">Recovered $15,000</p>
                   </div>
                 </div>
               </CardContent>
@@ -329,16 +331,18 @@ export default function Index() {
                     <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                   "After being scammed out of $8,500 in a romance scam, I thought I'd never see my money again. This team proved me wrong. Excellent service and results!"
                 </p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    R
-                  </div>
+                  <img 
+                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
+                    alt="Robert K."
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
                   <div className="ml-4">
-                    <p className="font-semibold text-lg">Robert K.</p>
-                    <p className="text-gray-600">Recovered $8,500</p>
+                    <p className="font-semibold text-lg text-foreground dark:text-white">Robert K.</p>
+                    <p className="text-muted-foreground">Recovered $8,500</p>
                   </div>
                 </div>
               </CardContent>
