@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,9 +12,12 @@ interface UserProfile {
 interface Case {
   id: string;
   title: string;
-  status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+  status: string;
   amount: number;
   created_at: string;
+  submission_id?: string | null;
+  updated_at: string;
+  user_id: string;
 }
 
 interface AuthContextType {
@@ -24,10 +26,13 @@ interface AuthContextType {
   cases: Case[];
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUserData: () => Promise<void>;
+  adminLogin: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [cases, setCases] = useState<Case[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -68,6 +74,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchUserProfile(user.id);
       await fetchUserCases(user.id);
     }
+  };
+
+  const adminLogin = async (email: string, password: string): Promise<boolean> => {
+    // Simple admin check - in production, you'd want more sophisticated role management
+    const adminEmails = ['admin@scamrecovery.com'];
+    const adminPasswords = ['admin123'];
+    
+    if (adminEmails.includes(email) && adminPasswords.includes(password)) {
+      setIsAdmin(true);
+      return true;
+    }
+    return false;
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setIsAdmin(false);
   };
 
   useEffect(() => {
@@ -136,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setIsAdmin(false);
   };
 
   const value = {
@@ -144,10 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     cases,
     session,
     loading,
+    isAdmin,
     signUp,
     signIn,
     signOut,
-    refreshUserData
+    refreshUserData,
+    adminLogin,
+    logout
   };
 
   return (
