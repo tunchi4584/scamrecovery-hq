@@ -9,7 +9,7 @@ interface UserProfile {
   created_at: string;
 }
 
-interface Case {
+export interface Case {
   id: string;
   title: string;
   status: string;
