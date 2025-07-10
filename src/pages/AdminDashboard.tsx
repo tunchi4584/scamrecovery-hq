@@ -86,12 +86,9 @@ export default function AdminDashboard() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Fetch notifications
-      const { data: notificationsData } = await supabase
-        .from('admin_notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      // For now, we'll skip notifications until the table is created
+      // This will be available after the SQL migration is run
+      const notificationsData: AdminNotification[] = [];
 
       if (profilesData && casesData) {
         // Group cases by user
@@ -108,7 +105,7 @@ export default function AdminDashboard() {
 
         setUsers(usersWithCases);
         setCases(casesData || []);
-        setNotifications(notificationsData || []);
+        setNotifications(notificationsData);
       }
     } catch (error) {
       toast({
