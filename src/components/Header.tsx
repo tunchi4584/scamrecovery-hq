@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Menu, X, User, LogOut, Settings } from 'lucide-react';
+import { Shield, Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,7 @@ import {
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -68,16 +68,6 @@ export function Header() {
                   </Button>
                 </Link>
 
-                {/* Admin Portal Link */}
-                {isAdmin && (
-                  <Link to="/admin">
-                    <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50">
-                      <Settings className="h-4 w-4 mr-1" />
-                      Admin Portal
-                    </Button>
-                  </Link>
-                )}
-
                 {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -91,12 +81,6 @@ export function Header() {
                       <User className="h-4 w-4 mr-2" />
                       Dashboard
                     </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem onClick={() => navigate('/admin')}>
-                        <Settings className="h-4 w-4 mr-2" />
-                        Admin Portal
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="h-4 w-4 mr-2" />
@@ -157,15 +141,6 @@ export function Header() {
                   >
                     Dashboard
                   </Link>
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="block px-3 py-2 text-red-600 hover:text-red-700 text-sm font-medium"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Admin Portal
-                    </Link>
-                  )}
                   <button
                     onClick={() => {
                       handleSignOut();
