@@ -44,7 +44,7 @@ export default function Contact() {
 
   const scamTypes = [
     'Investment Scam',
-    'Romance Scam',
+    'Romance Scam', 
     'Tech Support Scam',
     'Cryptocurrency Scam',
     'Online Shopping Scam',
@@ -415,7 +415,7 @@ export default function Contact() {
                     <Phone className="h-5 w-5 text-blue-600 mt-1" />
                     <div>
                       <p className="font-medium text-gray-900">Emergency Hotline</p>
-                      <p className="text-gray-600">+1 (555) 123-4567</p>
+                      <p className="text-gray-600">+1 (762) 203-5587</p>
                       <p className="text-sm text-gray-500">24/7 Support Available</p>
                     </div>
                   </div>
@@ -426,7 +426,7 @@ export default function Contact() {
                     </svg>
                     <div>
                       <p className="font-medium text-gray-900">WhatsApp</p>
-                      <p className="text-gray-600">+1 (555) 123-4567</p>
+                      <p className="text-gray-600">+1 (762) 203-5587</p>
                       <p className="text-sm text-gray-500">Quick responses via WhatsApp</p>
                     </div>
                   </div>
@@ -437,16 +437,18 @@ export default function Contact() {
                     </svg>
                     <div>
                       <p className="font-medium text-gray-900">Telegram</p>
-                      <p className="text-gray-600">@ScamRecoveryPro</p>
+                      <p className="text-gray-600">@Assetrecovery_HQ</p>
                       <p className="text-sm text-gray-500">Secure messaging via Telegram</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
-                    <Mail className="h-5 w-5 text-blue-600 mt-1" />
+                    <svg className="h-5 w-5 text-blue-600 mt-1" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
                     <div>
                       <p className="font-medium text-gray-900">Email Support</p>
-                      <p className="text-gray-600">help@scamrecovery.com</p>
+                      <p className="text-gray-600">assetrecovery36@gmail.com</p>
                       <p className="text-sm text-gray-500">Response within 2 hours</p>
                     </div>
                   </div>

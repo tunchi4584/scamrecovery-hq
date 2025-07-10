@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { CaseDetailsModal } from '@/components/CaseDetailsModal';
 import { 
   FileText, 
   DollarSign, 
@@ -15,7 +16,8 @@ import {
   Plus,
   TrendingUp,
   Shield,
-  Star
+  Star,
+  Eye
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -189,9 +191,17 @@ export default function Dashboard() {
                             </span>
                           </div>
                         </div>
-                        <Badge className={`${getStatusColor(case_.status)} font-medium`}>
-                          {getStatusLabel(case_.status)}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Badge className={`${getStatusColor(case_.status)} font-medium`}>
+                            {getStatusLabel(case_.status)}
+                          </Badge>
+                          <CaseDetailsModal case_={case_}>
+                            <Button size="sm" variant="outline" className="ml-2">
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Details
+                            </Button>
+                          </CaseDetailsModal>
+                        </div>
                       </div>
                       
                       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
