@@ -50,7 +50,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Header />
       
       <div className="py-20">
@@ -61,7 +61,7 @@ export default function Login() {
             <p className="text-gray-600 text-lg">Sign in to access your recovery dashboard</p>
           </div>
 
-          <Card>
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-2xl text-center">Login to Your Account</CardTitle>
             </CardHeader>
@@ -107,14 +107,20 @@ export default function Login() {
                 <Button 
                   type="submit" 
                   size="lg" 
-                  className="w-full text-lg py-4"
+                  className="w-full text-lg py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   disabled={loading}
                 >
                   {loading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
+              <div className="mt-6 text-center space-y-4">
+                <Link 
+                  to="/forgot-password" 
+                  className="block text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Forgot your password?
+                </Link>
                 <p className="text-gray-600">
                   Don't have an account?{' '}
                   <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">
