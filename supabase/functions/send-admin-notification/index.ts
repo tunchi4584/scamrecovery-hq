@@ -16,6 +16,7 @@ interface NotificationRequest {
   userName?: string;
   caseTitle?: string;
   amount?: number;
+  status?: string;
 }
 
 serve(async (req) => {
@@ -25,14 +26,16 @@ serve(async (req) => {
   }
 
   try {
-    const { type, email, message, userName, caseTitle, amount }: NotificationRequest = await req.json();
+    const { type, email, message, userName, caseTitle, amount, status }: NotificationRequest = await req.json();
 
     let subject = '';
     let htmlContent = '';
-    const adminEmail = 'admin@scamrecovery.com'; // Replace with actual admin email
+    let toEmail = '';
+    const adminEmail = 'assetrecovery36@gmail.com';
 
     if (type === 'new_user') {
       subject = '🎉 New User Registration - Scam Recovery';
+      toEmail = adminEmail;
       htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
@@ -56,6 +59,7 @@ serve(async (req) => {
       `;
     } else if (type === 'new_case') {
       subject = '🚨 New Case Submission - Scam Recovery';
+      toEmail = adminEmail;
       htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; text-align: center;">
@@ -84,21 +88,57 @@ serve(async (req) => {
           </div>
         </div>
       `;
+    } else if (type === 'submission_update') {
+      subject = '📋 Submission Status Update - Scam Recovery';
+      toEmail = email; // Send to the user who submitted
+      htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Submission Update</h1>
+          </div>
+          <div style="padding: 20px; background-color: #f8f9fa;">
+            <h2 style="color: #333;">Hello ${userName || 'Valued Client'},</h2>
+            <p style="font-size: 16px; color: #555;">
+              We have an update regarding your scam recovery submission:
+            </p>
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Case Type:</strong> ${caseTitle || 'Not specified'}</p>
+              <p><strong>Amount:</strong> $${amount?.toLocaleString() || '0'}</p>
+              <p><strong>Current Status:</strong> <span style="color: ${status === 'resolved' ? '#28a745' : status === 'in-progress' ? '#007bff' : status === 'rejected' ? '#dc3545' : '#ffc107'}; font-weight: bold;">${status?.toUpperCase() || 'PENDING'}</span></p>
+              <p><strong>Update Time:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; color: #1565c0;"><strong>Message:</strong> ${message}</p>
+            </div>
+            <p style="color: #666;">
+              If you have any questions about this update, please don't hesitate to contact our support team.
+            </p>
+            <div style="text-align: center; margin: 20px 0;">
+              <p style="color: #666; font-size: 14px;">
+                Best regards,<br>
+                Asset Recovery Team<br>
+                <a href="mailto:assetrecovery36@gmail.com" style="color: #007bff;">assetrecovery36@gmail.com</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     const emailResponse = await resend.emails.send({
-      from: 'Scam Recovery HQ <notifications@resend.dev>',
-      to: [adminEmail],
+      from: 'Asset Recovery <assetrecovery36@gmail.com>',
+      to: [toEmail],
       subject: subject,
       html: htmlContent,
     });
 
-    console.log('Admin notification sent successfully:', emailResponse);
+    console.log('Email sent successfully:', emailResponse);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Admin notification sent successfully'
+        message: 'Email sent successfully',
+        to: toEmail
       }),
       { 
         headers: { 
@@ -109,7 +149,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error sending admin notification:', error);
+    console.error('Error sending email:', error);
     
     return new Response(
       JSON.stringify({

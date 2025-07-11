@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,21 +72,22 @@ export default function AdminSubmissions() {
 
   const updateSubmissionStatus = async (submissionId: string, status: string, internalNotes?: string) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('submissions')
         .update({ 
           status, 
           internal_notes: internalNotes,
           updated_at: new Date().toISOString()
         })
-        .eq('id', submissionId);
+        .eq('id', submissionId)
+        .select()
+        .single();
 
       if (error) throw error;
 
+      // Update local state with the returned data
       setSubmissions(submissions.map(sub => 
-        sub.id === submissionId 
-          ? { ...sub, status, internal_notes: internalNotes, updated_at: new Date().toISOString() }
-          : sub
+        sub.id === submissionId ? data : sub
       ));
 
       toast({
@@ -131,12 +131,37 @@ export default function AdminSubmissions() {
     }
   };
 
-  const sendEmailToUser = (email: string) => {
-    // Dummy function for now
-    toast({
-      title: "Email Feature",
-      description: `Email functionality would send update to ${email}`,
-    });
+  const sendEmailToUser = async (email: string, submissionId: string) => {
+    try {
+      const submission = submissions.find(sub => sub.id === submissionId);
+      if (!submission) return;
+
+      const { error } = await supabase.functions.invoke('send-admin-notification', {
+        body: {
+          type: 'submission_update',
+          email: email,
+          message: `Your submission "${submission.scam_type}" has been updated to status: ${submission.status}`,
+          userName: submission.name,
+          caseTitle: submission.scam_type,
+          amount: submission.amount_lost,
+          status: submission.status
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Email sent to ${email}`,
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send email",
+        variant: "destructive"
+      });
+    }
   };
 
   const getUniqueScamTypes = () => {
@@ -335,7 +360,7 @@ export default function AdminSubmissions() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => sendEmailToUser(submission.email)}
+                          onClick={() => sendEmailToUser(submission.email, submission.id)}
                         >
                           <Mail className="h-4 w-4" />
                         </Button>
