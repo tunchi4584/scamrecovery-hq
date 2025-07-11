@@ -2,109 +2,131 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AdminPortal } from '@/components/AdminPortal';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { 
   Users, 
   FileText, 
   DollarSign, 
-  TrendingUp, 
-  LogOut,
-  Shield,
-  Bell,
-  Menu,
-  X
+  TrendingUp,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  XCircle
 } from 'lucide-react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  balance: number;
-  cases: AdminCase[];
-  joinDate: string;
-}
-
-interface AdminCase {
-  id: string;
-  title: string;
-  status: string;
-  amount: number;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  submission_id?: string | null;
-}
-
-interface AdminNotification {
-  id: string;
-  type: string;
-  message: string;
-  created_at: string;
-  user_id?: string;
-  case_id?: string;
+interface DashboardStats {
+  totalCases: number;
+  totalAmountLost: number;
+  totalAmountRecovered: number;
+  resolvedCases: number;
+  activeUsers: number;
+  pendingCases: number;
+  scamTypeData: Array<{ name: string; value: number; color: string }>;
+  statusData: Array<{ name: string; value: number; color: string }>;
 }
 
 export default function AdminDashboard() {
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [cases, setCases] = useState<AdminCase[]>([]);
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!user) {
       navigate('/admin/login');
-    } else {
-      fetchAdminData();
+      return;
     }
-  }, [isAdmin, navigate]);
 
-  const fetchAdminData = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have admin permissions.",
+        variant: "destructive"
+      });
+      navigate('/admin/login');
+      return;
+    }
+
+    fetchDashboardData();
+  }, [isAdmin, user, navigate, toast]);
+
+  const fetchDashboardData = async () => {
     try {
-      // Fetch users
-      const { data: profilesData } = await supabase
+      // Fetch submissions data
+      const { data: submissions } = await supabase
+        .from('submissions')
+        .select('*');
+
+      // Fetch balances data
+      const { data: balances } = await supabase
+        .from('balances')
+        .select('*');
+
+      // Fetch profiles data
+      const { data: profiles } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
 
-      // Fetch all cases
-      const { data: casesData } = await supabase
-        .from('cases')
-        .select('*')
-        .order('created_at', { ascending: false });
+      if (submissions && balances && profiles) {
+        const totalAmountLost = submissions.reduce((sum, sub) => sum + Number(sub.amount_lost), 0);
+        const totalAmountRecovered = balances.reduce((sum, bal) => sum + Number(bal.amount_recovered), 0);
+        const resolvedCases = submissions.filter(sub => sub.status === 'resolved').length;
+        const pendingCases = submissions.filter(sub => sub.status === 'pending').length;
+        const activeUsers = profiles.filter(profile => profile.is_active).length;
 
-      // For now, we'll skip notifications until the table is created
-      // This will be available after the SQL migration is run
-      const notificationsData: AdminNotification[] = [];
+        // Process scam types data
+        const scamTypeCounts: { [key: string]: number } = {};
+        submissions.forEach(sub => {
+          scamTypeCounts[sub.scam_type] = (scamTypeCounts[sub.scam_type] || 0) + 1;
+        });
 
-      if (profilesData && casesData) {
-        // Group cases by user
-        const usersWithCases = profilesData.map(profile => ({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          balance: casesData
-            .filter(case_ => case_.user_id === profile.id && case_.status === 'complete')
-            .reduce((sum, case_) => sum + Number(case_.amount), 0),
-          cases: casesData.filter(case_ => case_.user_id === profile.id),
-          joinDate: profile.created_at
+        const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+        const scamTypeData = Object.entries(scamTypeCounts).map(([name, value], index) => ({
+          name,
+          value,
+          color: colors[index % colors.length]
         }));
 
-        setUsers(usersWithCases);
-        setCases(casesData || []);
-        setNotifications(notificationsData);
+        // Process status data
+        const statusCounts: { [key: string]: number } = {};
+        submissions.forEach(sub => {
+          statusCounts[sub.status] = (statusCounts[sub.status] || 0) + 1;
+        });
+
+        const statusColors: { [key: string]: string } = {
+          pending: '#F59E0B',
+          'in-progress': '#3B82F6',
+          resolved: '#10B981',
+          rejected: '#EF4444'
+        };
+
+        const statusData = Object.entries(statusCounts).map(([name, value]) => ({
+          name,
+          value,
+          color: statusColors[name] || '#6B7280'
+        }));
+
+        setStats({
+          totalCases: submissions.length,
+          totalAmountLost,
+          totalAmountRecovered,
+          resolvedCases,
+          activeUsers,
+          pendingCases,
+          scamTypeData,
+          statusData
+        });
       }
     } catch (error) {
+      console.error('Error fetching dashboard data:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch admin data",
+        description: "Failed to fetch dashboard data",
         variant: "destructive"
       });
     } finally {
@@ -112,204 +134,170 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!isAdmin) return null;
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading admin dashboard...</p>
+      <AdminLayout title="Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  if (!stats) {
+    return (
+      <AdminLayout title="Dashboard">
+        <div className="text-center text-gray-500">Failed to load dashboard data</div>
+      </AdminLayout>
+    );
+  }
 
-  const stats = {
-    totalUsers: users.length,
-    totalCases: cases.length,
-    totalBalance: users.reduce((acc, user) => acc + user.balance, 0),
-    activeCases: cases.filter(c => !['complete', 'closed'].includes(c.status)).length
-  };
+  const recoveryRate = stats.totalAmountLost > 0 ? (stats.totalAmountRecovered / stats.totalAmountLost) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-      {/* Mobile Header */}
-      <header className="lg:hidden bg-white shadow-lg sticky top-0 z-50">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <Shield className="h-8 w-8 text-red-500" />
-            <h1 className="text-xl font-bold text-gray-900">Admin Portal</h1>
-          </div>
-          <div className="flex items-center space-x-2">
-            {notifications.length > 0 && (
-              <div className="relative">
-                <Bell className="h-6 w-6 text-yellow-400" />
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                  {notifications.length}
-                </span>
-              </div>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden"
-            >
-              {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Desktop Header */}
-      <header className="hidden lg:block bg-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <Shield className="h-10 w-10 text-red-500" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Manage users and cases</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {notifications.length > 0 && (
-                <div className="relative">
-                  <Bell className="h-6 w-6 text-yellow-400" />
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                </div>
-              )}
-              <Button 
-                onClick={handleLogout} 
-                variant="outline" 
-                className="border-gray-600 hover:bg-gray-100"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile Menu Overlay */}
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}>
-          <div className="fixed right-0 top-0 h-full w-64 bg-white shadow-xl p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="space-y-4">
-              <Button 
-                onClick={handleLogout} 
-                variant="outline" 
-                className="w-full"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
-                </div>
-                <Users className="h-12 w-12 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Cases</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalCases}</p>
-                </div>
-                <FileText className="h-12 w-12 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Recovered</p>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-900">${stats.totalBalance.toLocaleString()}</p>
-                </div>
-                <DollarSign className="h-12 w-12 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active Cases</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.activeCases}</p>
-                </div>
-                <TrendingUp className="h-12 w-12 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Notifications */}
-        {notifications.length > 0 && (
-          <Card className="mb-8 shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center text-xl">
-                <Bell className="h-5 w-5 mr-2" />
-                Recent Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {notifications.slice(0, 5).map((notification) => (
-                  <div key={notification.id} className="flex items-center p-3 bg-blue-50 rounded-lg">
-                    <Bell className="h-4 w-4 text-blue-600 mr-3 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{notification.message}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(notification.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Admin Portal */}
-        <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl flex items-center">
-              <Users className="h-6 w-6 mr-2" />
-              User & Case Management Portal
-            </CardTitle>
+    <AdminLayout title="Dashboard">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="p-6">
-            <AdminPortal users={users} onRefresh={fetchAdminData} />
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCases}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.pendingCases} pending
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Amount Lost</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${stats.totalAmountLost.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              Total reported losses
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Amount Recovered</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${stats.totalAmountRecovered.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              {recoveryRate.toFixed(1)}% recovery rate
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              Registered users
+            </p>
           </CardContent>
         </Card>
       </div>
-    </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Scam Types Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Cases by Scam Type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={stats.scamTypeData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {stats.scamTypeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Status Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Cases by Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.statusData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#3B82F6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity Summary */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="flex items-center space-x-2 p-3 bg-yellow-50 rounded-lg">
+              <Clock className="h-5 w-5 text-yellow-600" />
+              <div>
+                <p className="text-sm font-medium">Pending Cases</p>
+                <p className="text-lg font-bold text-yellow-600">{stats.pendingCases}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 p-3 bg-green-50 rounded-lg">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm font-medium">Resolved Cases</p>
+                <p className="text-lg font-bold text-green-600">{stats.resolvedCases}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
+              <DollarSign className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium">Recovery Rate</p>
+                <p className="text-lg font-bold text-blue-600">{recoveryRate.toFixed(1)}%</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 p-3 bg-purple-50 rounded-lg">
+              <Users className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm font-medium">Total Users</p>
+                <p className="text-lg font-bold text-purple-600">{stats.activeUsers}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </AdminLayout>
   );
 }

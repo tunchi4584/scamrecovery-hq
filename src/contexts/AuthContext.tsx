@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +8,7 @@ interface UserProfile {
   name: string;
   email: string;
   created_at: string;
+  is_active: boolean;
 }
 
 export interface Case {
@@ -33,6 +35,7 @@ interface AuthContextType {
   refreshUserData: () => Promise<void>;
   adminLogin: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  checkAdminRole: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,22 +72,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const checkAdminRole = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+    
+    const hasAdminRole = !error && data?.role === 'admin';
+    setIsAdmin(hasAdminRole);
+    return hasAdminRole;
+  };
+
   const refreshUserData = async () => {
     if (user) {
       await fetchUserProfile(user.id);
       await fetchUserCases(user.id);
+      await checkAdminRole();
     }
   };
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    // Simple admin check - in production, you'd want more sophisticated role management
-    const adminEmails = ['admin@scamrecovery.com'];
-    const adminPasswords = ['admin123'];
-    
-    if (adminEmails.includes(email) && adminPasswords.includes(password)) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error || !data.user) {
+      return false;
+    }
+
+    // Check if user has admin role
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', data.user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (roleData?.role === 'admin') {
       setIsAdmin(true);
       return true;
     }
+
+    // If not admin, sign them out
+    await supabase.auth.signOut();
     return false;
   };
 
@@ -105,10 +140,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTimeout(async () => {
             await fetchUserProfile(session.user.id);
             await fetchUserCases(session.user.id);
+            await checkAdminRole();
           }, 0);
         } else {
           setProfile(null);
           setCases([]);
+          setIsAdmin(false);
         }
         setLoading(false);
       }
@@ -123,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(async () => {
           await fetchUserProfile(session.user.id);
           await fetchUserCases(session.user.id);
+          await checkAdminRole();
         }, 0);
       }
       setLoading(false);
@@ -174,7 +212,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshUserData,
     adminLogin,
-    logout
+    logout,
+    checkAdminRole
   };
 
   return (
