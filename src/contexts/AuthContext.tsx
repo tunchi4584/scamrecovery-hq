@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,78 +48,100 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (data && !error) {
-      setProfile(data);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (data && !error) {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
     }
   };
 
   const fetchUserCases = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('cases')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    if (data && !error) {
-      setCases(data);
+    try {
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (data && !error) {
+        setCases(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user cases:', error);
     }
   };
 
   const checkAdminRole = async (): Promise<boolean> => {
     if (!user) return false;
     
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
-    
-    const hasAdminRole = !error && data?.role === 'admin';
-    setIsAdmin(hasAdminRole);
-    return hasAdminRole;
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+      
+      const hasAdminRole = !error && data?.role === 'admin';
+      setIsAdmin(hasAdminRole);
+      return hasAdminRole;
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      setIsAdmin(false);
+      return false;
+    }
   };
 
   const refreshUserData = async () => {
     if (user) {
-      await fetchUserProfile(user.id);
-      await fetchUserCases(user.id);
-      await checkAdminRole();
+      await Promise.all([
+        fetchUserProfile(user.id),
+        fetchUserCases(user.id),
+        checkAdminRole()
+      ]);
     }
   };
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    if (error || !data.user) {
-      return false;
-    }
+      if (error || !data.user) {
+        console.error('Admin login error:', error);
+        return false;
+      }
 
-    // Check if user has admin role
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', data.user.id)
-      .eq('role', 'admin')
-      .single();
+      // Check if user has admin role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .eq('role', 'admin')
+        .single();
 
-    if (roleData?.role === 'admin') {
+      if (roleError || roleData?.role !== 'admin') {
+        console.error('User is not admin:', roleError);
+        await supabase.auth.signOut();
+        return false;
+      }
+
       setIsAdmin(true);
       return true;
+    } catch (error) {
+      console.error('Admin login exception:', error);
+      return false;
     }
-
-    // If not admin, sign them out
-    await supabase.auth.signOut();
-    return false;
   };
 
   const logout = async () => {
@@ -129,44 +150,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            await Promise.all([
+              fetchUserProfile(session.user.id),
+              fetchUserCases(session.user.id),
+              checkAdminRole()
+            ]);
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
+        console.log('Auth state change:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer data fetching to avoid blocking auth state changes
-          setTimeout(async () => {
-            await fetchUserProfile(session.user.id);
-            await fetchUserCases(session.user.id);
-            await checkAdminRole();
-          }, 0);
+          // Only fetch data if it's a new session or login event
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            await Promise.all([
+              fetchUserProfile(session.user.id),
+              fetchUserCases(session.user.id),
+              checkAdminRole()
+            ]);
+          }
         } else {
           setProfile(null);
           setCases([]);
           setIsAdmin(false);
         }
-        setLoading(false);
+        
+        if (event !== 'INITIAL_SESSION') {
+          setLoading(false);
+        }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          await fetchUserProfile(session.user.id);
-          await fetchUserCases(session.user.id);
-          await checkAdminRole();
-        }, 0);
-      }
-      setLoading(false);
-    });
+    getInitialSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, name: string) => {

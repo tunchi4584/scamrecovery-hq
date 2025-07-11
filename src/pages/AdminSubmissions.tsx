@@ -72,7 +72,8 @@ export default function AdminSubmissions() {
 
   const updateSubmissionStatus = async (submissionId: string, status: string, internalNotes?: string) => {
     try {
-      const { data, error } = await supabase
+      // Update submission
+      const { data: submissionData, error: submissionError } = await supabase
         .from('submissions')
         .update({ 
           status, 
@@ -83,18 +84,60 @@ export default function AdminSubmissions() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (submissionError) throw submissionError;
 
-      // Update local state with the returned data
+      // Also update or create related case
+      const submission = submissions.find(sub => sub.id === submissionId);
+      if (submission) {
+        // Check if case exists
+        const { data: existingCase } = await supabase
+          .from('cases')
+          .select('*')
+          .eq('submission_id', submissionId)
+          .single();
+
+        if (existingCase) {
+          // Update existing case
+          const { error: caseError } = await supabase
+            .from('cases')
+            .update({
+              status,
+              amount: submission.amount_lost,
+              updated_at: new Date().toISOString()
+            })
+            .eq('submission_id', submissionId);
+
+          if (caseError) throw caseError;
+        } else {
+          // Create new case
+          const { error: caseError } = await supabase
+            .from('cases')
+            .insert({
+              user_id: submission.user_id,
+              title: `${submission.scam_type} Recovery Case`,
+              status,
+              amount: submission.amount_lost,
+              submission_id: submissionId
+            });
+
+          if (caseError) throw caseError;
+        }
+      }
+
+      // Update local state
       setSubmissions(submissions.map(sub => 
-        sub.id === submissionId ? data : sub
+        sub.id === submissionId ? submissionData : sub
       ));
 
       toast({
         title: "Success",
-        description: "Submission updated successfully",
+        description: "Submission and case updated successfully",
       });
       setEditingSubmission(null);
+
+      // Send email notification to user
+      await sendEmailToUser(submission?.email || '', submissionId, status);
+      
     } catch (error) {
       console.error('Error updating submission:', error);
       toast({
@@ -131,34 +174,47 @@ export default function AdminSubmissions() {
     }
   };
 
-  const sendEmailToUser = async (email: string, submissionId: string) => {
+  const sendEmailToUser = async (email: string, submissionId: string, newStatus?: string) => {
     try {
       const submission = submissions.find(sub => sub.id === submissionId);
       if (!submission) return;
+
+      const statusToUse = newStatus || submission.status;
+      
+      console.log('Sending email notification:', {
+        email,
+        submissionId,
+        status: statusToUse,
+        caseTitle: submission.scam_type,
+        amount: submission.amount_lost
+      });
 
       const { error } = await supabase.functions.invoke('send-admin-notification', {
         body: {
           type: 'submission_update',
           email: email,
-          message: `Your submission "${submission.scam_type}" has been updated to status: ${submission.status}`,
+          message: `Your submission "${submission.scam_type}" has been updated to status: ${statusToUse}. ${submission.internal_notes ? 'Additional notes: ' + submission.internal_notes : ''}`,
           userName: submission.name,
           caseTitle: submission.scam_type,
           amount: submission.amount_lost,
-          status: submission.status
+          status: statusToUse
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Email function error:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
-        description: `Email sent to ${email}`,
+        description: `Email notification sent to ${email}`,
       });
     } catch (error) {
       console.error('Error sending email:', error);
       toast({
-        title: "Error",
-        description: "Failed to send email",
+        title: "Warning",
+        description: "Update successful but email notification failed",
         variant: "destructive"
       });
     }
@@ -312,6 +368,7 @@ export default function AdminSubmissions() {
                                     <p>${selectedSubmission.amount_lost.toLocaleString()}</p>
                                   </div>
                                 </div>
+                                
                                 <div>
                                   <label className="text-sm font-medium">Description:</label>
                                   <p className="mt-1 p-2 bg-gray-50 rounded">{selectedSubmission.description}</p>
