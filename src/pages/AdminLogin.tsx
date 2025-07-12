@@ -24,8 +24,8 @@ export default function AdminLogin() {
   // Redirect if already logged in as admin
   useEffect(() => {
     if (!authLoading && user && isAdmin) {
-      console.log('User is already admin, redirecting to dashboard');
-      navigate('/admin/dashboard', { replace: true });
+      console.log('User is already admin, redirecting to submissions');
+      navigate('/admin/submissions', { replace: true });
     }
   }, [user, isAdmin, navigate, authLoading]);
 

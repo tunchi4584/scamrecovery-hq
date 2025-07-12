@@ -43,13 +43,17 @@ export default function AdminSubmissions() {
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionData | null>(null);
   const [editingSubmission, setEditingSubmission] = useState<SubmissionData | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      console.log('Redirecting non-admin user');
+      navigate('/admin/login', { replace: true });
+    }
+  }, [user, isAdmin, authLoading, navigate]);
 
   const fetchSubmissions = useCallback(async () => {
-    if (!user || !isAdmin) {
-      console.log('User not authenticated or not admin, skipping fetch');
-      return;
-    }
+    if (!user || !isAdmin) return;
 
     try {
       console.log('Fetching submissions...');
@@ -87,36 +91,12 @@ export default function AdminSubmissions() {
     }
   }, [user, isAdmin, toast]);
 
-  // Check authentication and redirect if needed
+  // Fetch submissions when authenticated
   useEffect(() => {
-    if (authLoading) {
-      console.log('Auth still loading...');
-      return;
-    }
-
-    setAuthChecked(true);
-
-    if (!user) {
-      console.log('No user found, redirecting to admin login');
-      navigate('/admin/login', { replace: true });
-      return;
-    }
-
-    if (!isAdmin) {
-      console.log('User is not admin, redirecting to admin login');
-      navigate('/admin/login', { replace: true });
-      return;
-    }
-
-    console.log('User is authenticated admin, fetching submissions');
-  }, [authLoading, user, isAdmin, navigate]);
-
-  // Fetch submissions when auth is confirmed
-  useEffect(() => {
-    if (authChecked && user && isAdmin && !authLoading) {
+    if (!authLoading && user && isAdmin) {
       fetchSubmissions();
     }
-  }, [authChecked, user, isAdmin, authLoading, fetchSubmissions]);
+  }, [user, isAdmin, authLoading, fetchSubmissions]);
 
   const updateSubmissionStatus = async (submissionId: string, newStatus: string, internalNotes?: string) => {
     try {
@@ -128,7 +108,7 @@ export default function AdminSubmissions() {
         throw new Error('Submission not found');
       }
 
-      // Update submission in database
+      // Update submission
       const { data: updatedSubmission, error: submissionError } = await supabase
         .from('submissions')
         .update({ 
@@ -141,13 +121,10 @@ export default function AdminSubmissions() {
         .single();
 
       if (submissionError) {
-        console.error('Submission update error:', submissionError);
         throw submissionError;
       }
 
-      console.log('Submission updated successfully');
-
-      // Update or create related case
+      // Handle case creation/update
       const { data: existingCase } = await supabase
         .from('cases')
         .select('*')
@@ -155,8 +132,7 @@ export default function AdminSubmissions() {
         .maybeSingle();
 
       if (existingCase) {
-        console.log('Updating existing case:', existingCase.id);
-        const { error: caseError } = await supabase
+        await supabase
           .from('cases')
           .update({
             status: newStatus,
@@ -164,15 +140,8 @@ export default function AdminSubmissions() {
             updated_at: new Date().toISOString()
           })
           .eq('id', existingCase.id);
-
-        if (caseError) {
-          console.error('Case update error:', caseError);
-        } else {
-          console.log('Case updated successfully');
-        }
       } else {
-        console.log('Creating new case for submission');
-        const { error: caseError } = await supabase
+        await supabase
           .from('cases')
           .insert({
             user_id: submission.user_id,
@@ -183,12 +152,6 @@ export default function AdminSubmissions() {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
-
-        if (caseError) {
-          console.error('Case creation error:', caseError);
-        } else {
-          console.log('Case created successfully');
-        }
       }
 
       // Update local state
@@ -200,7 +163,6 @@ export default function AdminSubmissions() {
 
       // Send email notification
       try {
-        console.log('Sending email notification to:', submission.email);
         await sendEmailToUser(
           submission.email, 
           submissionId, 
@@ -211,7 +173,7 @@ export default function AdminSubmissions() {
           internalNotes
         );
       } catch (emailError) {
-        console.error('Email sending failed:', emailError);
+        console.error('Email failed:', emailError);
         toast({
           title: "Warning",
           description: "Status updated but email notification failed",
@@ -256,10 +218,7 @@ export default function AdminSubmissions() {
       console.log('Sending email notification:', {
         email,
         submissionId,
-        status: statusToUse,
-        userName,
-        caseTitle,
-        amount
+        status: statusToUse
       });
 
       const { data, error } = await supabase.functions.invoke('send-admin-notification', {
@@ -275,11 +234,10 @@ export default function AdminSubmissions() {
       });
 
       if (error) {
-        console.error('Email function error:', error);
         throw error;
       }
 
-      console.log('Email sent successfully:', data);
+      console.log('Email sent successfully');
       
       toast({
         title: "Success",
@@ -336,17 +294,22 @@ export default function AdminSubmissions() {
   });
 
   // Show loading while auth is loading
-  if (authLoading || !authChecked) {
+  if (authLoading) {
     return (
       <AdminLayout title="Scam Submissions">
         <div className="flex items-center justify-center h-64">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="text-lg">Authenticating...</span>
+            <span className="text-lg">Loading...</span>
           </div>
         </div>
       </AdminLayout>
     );
+  }
+
+  // Redirect if not authenticated
+  if (!user || !isAdmin) {
+    return null;
   }
 
   // Show loading while data is loading

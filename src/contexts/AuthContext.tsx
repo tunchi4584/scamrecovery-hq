@@ -47,10 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
-  // Simple admin role check function
-  const checkAdminRoleDirect = async (userId: string): Promise<boolean> => {
+  // Simple admin check without recursion
+  const checkIsAdmin = async (userId: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -60,18 +59,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
       
       if (error) {
-        console.error('Admin role check error:', error);
+        console.error('Admin check error:', error);
         return false;
       }
       
       return data?.role === 'admin';
     } catch (error) {
-      console.error('Exception in admin role check:', error);
+      console.error('Admin check exception:', error);
       return false;
     }
   };
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -79,19 +78,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single();
       
-      if (error) {
-        console.error('Profile fetch error:', error);
-        return null;
+      if (!error && data) {
+        setProfile(data);
       }
-      
-      return data;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      return null;
+      console.error('Profile fetch error:', error);
     }
   };
 
-  const fetchUserCases = async (userId: string) => {
+  const fetchCases = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('cases')
@@ -99,15 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Cases fetch error:', error);
-        return [];
+      if (!error && data) {
+        setCases(data);
       }
-      
-      return data || [];
     } catch (error) {
-      console.error('Error fetching user cases:', error);
-      return [];
+      console.error('Cases fetch error:', error);
     }
   };
 
@@ -115,15 +106,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser?.id) return;
 
     try {
-      const [adminResult, profileResult, casesResult] = await Promise.all([
-        checkAdminRoleDirect(currentUser.id),
-        fetchUserProfile(currentUser.id),
-        fetchUserCases(currentUser.id)
-      ]);
+      // Check admin status
+      const adminStatus = await checkIsAdmin(currentUser.id);
+      setIsAdmin(adminStatus);
       
-      setIsAdmin(adminResult);
-      if (profileResult) setProfile(profileResult);
-      setCases(casesResult);
+      // Fetch profile and cases
+      await Promise.all([
+        fetchProfile(currentUser.id),
+        fetchCases(currentUser.id)
+      ]);
     } catch (error) {
       console.error('Error updating user data:', error);
     }
@@ -131,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAdminRole = async (): Promise<boolean> => {
     if (!user?.id) return false;
-    return checkAdminRoleDirect(user.id);
+    return checkIsAdmin(user.id);
   };
 
   const refreshUserData = async () => {
@@ -141,10 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('Starting admin login for:', email);
+      console.log('Admin login attempt for:', email);
       setLoading(true);
       
-      // Clear existing session
+      // Sign out any existing session
       await supabase.auth.signOut();
       
       // Attempt login
@@ -154,12 +145,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error || !data.user || !data.session) {
-        console.error('Admin login failed:', error);
+        console.error('Login failed:', error);
         return false;
       }
 
       // Check admin role
-      const hasAdminRole = await checkAdminRoleDirect(data.user.id);
+      const hasAdminRole = await checkIsAdmin(data.user.id);
       if (!hasAdminRole) {
         console.error('User is not admin');
         await supabase.auth.signOut();
@@ -178,12 +169,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      setLoading(true);
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
-      setLoading(false);
+      console.error('Logout error:', error);
     }
   };
 
@@ -221,57 +209,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
-      try {
-        console.log('Initializing auth...');
-        
-        // Get current session
-        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          if (mounted) {
-            setLoading(false);
-            setInitialized(true);
-          }
-          return;
-        }
-
-        if (mounted && currentSession?.user) {
-          console.log('Found existing session for user:', currentSession.user.email);
-          
-          setSession(currentSession);
-          setUser(currentSession.user);
-          
-          // Update user data in background
-          setTimeout(() => {
-            if (mounted) {
-              updateUserData(currentSession.user);
-            }
-          }, 0);
-        }
-        
-        if (mounted) {
-          setLoading(false);
-          setInitialized(true);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        if (mounted) {
-          setLoading(false);
-          setInitialized(true);
-        }
-      }
-    };
-
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (!mounted) return;
 
         console.log('Auth state change:', event, session?.user?.email || 'no user');
         
-        if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT' || !session) {
           setSession(null);
           setUser(null);
           setProfile(null);
@@ -285,12 +230,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session);
           setUser(session.user);
           
-          // Update user data in background for sign in events
+          // Update user data in background
           if (event === 'SIGNED_IN') {
             setTimeout(() => {
-              if (mounted) {
-                updateUserData(session.user);
-              }
+              updateUserData(session.user);
             }, 0);
           }
         }
@@ -299,16 +242,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Initialize auth only if not already initialized
-    if (!initialized) {
-      initializeAuth();
-    }
+    // Check for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+        } else if (currentSession?.user) {
+          console.log('Found existing session');
+          setSession(currentSession);
+          setUser(currentSession.user);
+          
+          // Update user data
+          setTimeout(() => {
+            updateUserData(currentSession.user);
+          }, 0);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   const value = {
     user,
