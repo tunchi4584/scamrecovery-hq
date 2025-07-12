@@ -23,11 +23,11 @@ export default function AdminLogin() {
 
   // Redirect if already logged in as admin
   useEffect(() => {
-    console.log('AdminLogin - Auth state:', { authLoading, user: user?.email, isAdmin });
+    console.log('AdminLogin - Auth state check:', { authLoading, user: user?.email, isAdmin });
     
     if (!authLoading && user && isAdmin) {
       console.log('User is already admin, redirecting to dashboard');
-      navigate('/admin/dashboard');
+      navigate('/admin/dashboard', { replace: true });
     }
   }, [user, isAdmin, navigate, authLoading]);
 
@@ -46,16 +46,16 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      console.log('Attempting admin login...');
+      console.log('Attempting admin login for:', email);
       const success = await adminLogin(email, password);
       
       if (success) {
-        console.log('Admin login successful');
+        console.log('Admin login successful, navigating to dashboard');
         toast({
           title: "Admin Login Successful",
           description: "Welcome to the admin portal.",
         });
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { replace: true });
       } else {
         console.log('Admin login failed');
         toast({
@@ -214,6 +214,7 @@ export default function AdminLogin() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter admin email"
                   disabled={loading}
+                  autoComplete="email"
                 />
               </div>
 
@@ -230,6 +231,7 @@ export default function AdminLogin() {
                     placeholder="Enter password"
                     className="pr-12"
                     disabled={loading}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
