@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -19,7 +18,7 @@ import {
   CheckCircle,
   Activity,
   Eye,
-  Refresh
+  RefreshCw
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -174,7 +173,7 @@ export default function Dashboard() {
               disabled={refreshing}
               className="flex items-center gap-2"
             >
-              <Refresh className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
           </div>
