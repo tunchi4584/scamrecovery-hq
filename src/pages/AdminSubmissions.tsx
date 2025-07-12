@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Search, Edit2, Trash2, Eye, Mail, Loader2 } from 'lucide-react';
+import { Search, Edit2, Trash2, Eye, Mail, Loader2, AlertTriangle } from 'lucide-react';
 
 interface SubmissionData {
   id: string;
@@ -35,6 +36,7 @@ export default function AdminSubmissions() {
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<SubmissionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [scamTypeFilter, setScamTypeFilter] = useState<string>('all');
@@ -42,21 +44,43 @@ export default function AdminSubmissions() {
   const [editingSubmission, setEditingSubmission] = useState<SubmissionData | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
 
+  // Check authentication and admin status
   useEffect(() => {
-    if (authLoading) return;
-    
-    if (!user || !isAdmin) {
+    console.log('AdminSubmissions - Auth state:', { 
+      authLoading, 
+      user: user?.email, 
+      isAdmin 
+    });
+
+    // Wait for auth to finish loading
+    if (authLoading) {
+      console.log('Auth still loading...');
+      return;
+    }
+
+    // Check if user is authenticated and is admin
+    if (!user) {
+      console.log('No user found, redirecting to admin login');
       navigate('/admin/login');
       return;
     }
-    
+
+    if (!isAdmin) {
+      console.log('User is not admin, redirecting to admin login');
+      navigate('/admin/login');
+      return;
+    }
+
+    // User is authenticated and is admin, fetch submissions
+    console.log('User is authenticated admin, fetching submissions');
     fetchSubmissions();
-  }, [user, isAdmin, navigate, authLoading]);
+  }, [authLoading, user, isAdmin, navigate]);
 
   const fetchSubmissions = async () => {
     try {
       console.log('Fetching submissions...');
       setLoading(true);
+      setError(null);
       
       const { data, error } = await supabase
         .from('submissions')
@@ -65,16 +89,23 @@ export default function AdminSubmissions() {
 
       if (error) {
         console.error('Error fetching submissions:', error);
-        throw error;
+        setError(`Failed to fetch submissions: ${error.message}`);
+        toast({
+          title: "Error",
+          description: "Failed to fetch submissions. Please try again.",
+          variant: "destructive"
+        });
+        return;
       }
       
-      console.log('Submissions fetched:', data?.length || 0);
+      console.log('Submissions fetched successfully:', data?.length || 0);
       setSubmissions(data || []);
     } catch (error) {
-      console.error('Error in fetchSubmissions:', error);
+      console.error('Exception in fetchSubmissions:', error);
+      setError('An unexpected error occurred while fetching submissions');
       toast({
         title: "Error",
-        description: "Failed to fetch submissions. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -82,10 +113,10 @@ export default function AdminSubmissions() {
     }
   };
 
-  const updateSubmissionStatus = async (submissionId: string, status: string, internalNotes?: string) => {
+  const updateSubmissionStatus = async (submissionId: string, newStatus: string, internalNotes?: string) => {
     try {
       setUpdating(submissionId);
-      console.log('Updating submission:', submissionId, 'to status:', status);
+      console.log('Updating submission:', submissionId, 'to status:', newStatus);
 
       // Find the submission
       const submission = submissions.find(sub => sub.id === submissionId);
@@ -93,11 +124,11 @@ export default function AdminSubmissions() {
         throw new Error('Submission not found');
       }
 
-      // Update submission
+      // Update submission in database
       const { data: updatedSubmission, error: submissionError } = await supabase
         .from('submissions')
         .update({ 
-          status, 
+          status: newStatus, 
           internal_notes: internalNotes,
           updated_at: new Date().toISOString()
         })
@@ -124,7 +155,7 @@ export default function AdminSubmissions() {
         const { error: caseError } = await supabase
           .from('cases')
           .update({
-            status,
+            status: newStatus,
             amount: submission.amount_lost,
             updated_at: new Date().toISOString()
           })
@@ -132,6 +163,8 @@ export default function AdminSubmissions() {
 
         if (caseError) {
           console.error('Case update error:', caseError);
+        } else {
+          console.log('Case updated successfully');
         }
       } else {
         console.log('Creating new case for submission');
@@ -140,7 +173,7 @@ export default function AdminSubmissions() {
           .insert({
             user_id: submission.user_id,
             title: `${submission.scam_type} Recovery Case`,
-            status,
+            status: newStatus,
             amount: submission.amount_lost,
             submission_id: submissionId,
             created_at: new Date().toISOString(),
@@ -149,21 +182,38 @@ export default function AdminSubmissions() {
 
         if (caseError) {
           console.error('Case creation error:', caseError);
+        } else {
+          console.log('Case created successfully');
         }
       }
 
       // Update local state
-      setSubmissions(submissions.map(sub => 
-        sub.id === submissionId ? updatedSubmission : sub
-      ));
+      setSubmissions(prevSubmissions => 
+        prevSubmissions.map(sub => 
+          sub.id === submissionId ? updatedSubmission : sub
+        )
+      );
 
       // Send email notification
       try {
         console.log('Sending email notification to:', submission.email);
-        await sendEmailToUser(submission.email, submissionId, status, submission.name, submission.scam_type, submission.amount_lost, internalNotes);
+        await sendEmailToUser(
+          submission.email, 
+          submissionId, 
+          newStatus, 
+          submission.name, 
+          submission.scam_type, 
+          submission.amount_lost, 
+          internalNotes
+        );
       } catch (emailError) {
         console.error('Email sending failed:', emailError);
         // Don't fail the whole operation if email fails
+        toast({
+          title: "Warning",
+          description: "Status updated but email notification failed",
+          variant: "destructive"
+        });
       }
 
       toast({
@@ -182,32 +232,6 @@ export default function AdminSubmissions() {
       });
     } finally {
       setUpdating(null);
-    }
-  };
-
-  const deleteSubmission = async (submissionId: string) => {
-    if (!confirm('Are you sure you want to delete this submission?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('submissions')
-        .delete()
-        .eq('id', submissionId);
-
-      if (error) throw error;
-
-      setSubmissions(submissions.filter(sub => sub.id !== submissionId));
-      toast({
-        title: "Success",
-        description: "Submission deleted successfully",
-      });
-    } catch (error) {
-      console.error('Error deleting submission:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete submission",
-        variant: "destructive"
-      });
     }
   };
 
@@ -260,9 +284,31 @@ export default function AdminSubmissions() {
       });
     } catch (error) {
       console.error('Error sending email:', error);
+      throw error; // Re-throw to handle in caller
+    }
+  };
+
+  const deleteSubmission = async (submissionId: string) => {
+    if (!confirm('Are you sure you want to delete this submission?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('submissions')
+        .delete()
+        .eq('id', submissionId);
+
+      if (error) throw error;
+
+      setSubmissions(submissions.filter(sub => sub.id !== submissionId));
       toast({
-        title: "Warning",
-        description: "Update successful but email notification failed",
+        title: "Success",
+        description: "Submission deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting submission:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete submission",
         variant: "destructive"
       });
     }
@@ -286,13 +332,52 @@ export default function AdminSubmissions() {
     return matchesSearch && matchesStatus && matchesScamType;
   });
 
-  if (authLoading || loading) {
+  // Show loading while auth is loading
+  if (authLoading) {
+    return (
+      <AdminLayout title="Scam Submissions">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="text-lg">Authenticating...</span>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Show loading while data is loading
+  if (loading) {
     return (
       <AdminLayout title="Scam Submissions">
         <div className="flex items-center justify-center h-64">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             <span className="text-lg">Loading submissions...</span>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <AdminLayout title="Scam Submissions">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center space-y-4">
+            <AlertTriangle className="h-12 w-12 text-red-500" />
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-red-700">Error Loading Submissions</h3>
+              <p className="text-red-600 mt-2">{error}</p>
+              <Button 
+                onClick={fetchSubmissions} 
+                className="mt-4"
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         </div>
       </AdminLayout>
@@ -338,6 +423,10 @@ export default function AdminSubmissions() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button onClick={fetchSubmissions} variant="outline">
+                <Loader2 className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
             </div>
           </div>
         </CardHeader>

@@ -17,30 +17,47 @@ export default function AdminLogin() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-  const { adminLogin, isAdmin, user } = useAuth();
+  const { adminLogin, isAdmin, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in as admin
   useEffect(() => {
-    if (user && isAdmin) {
+    console.log('AdminLogin - Auth state:', { authLoading, user: user?.email, isAdmin });
+    
+    if (!authLoading && user && isAdmin) {
+      console.log('User is already admin, redirecting to dashboard');
       navigate('/admin/dashboard');
     }
-  }, [user, isAdmin, navigate]);
+  }, [user, isAdmin, navigate, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter both email and password.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
 
     try {
+      console.log('Attempting admin login...');
       const success = await adminLogin(email, password);
+      
       if (success) {
+        console.log('Admin login successful');
         toast({
           title: "Admin Login Successful",
           description: "Welcome to the admin portal.",
         });
         navigate('/admin/dashboard');
       } else {
+        console.log('Admin login failed');
         toast({
           title: "Access Denied",
           description: "Invalid credentials or insufficient permissions.",
@@ -48,6 +65,7 @@ export default function AdminLogin() {
         });
       }
     } catch (error) {
+      console.error('Admin login error:', error);
       toast({
         title: "Login Error",
         description: "An error occurred. Please try again.",
@@ -60,6 +78,16 @@ export default function AdminLogin() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!resetEmail) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your email address.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setResetLoading(true);
 
     try {
@@ -78,6 +106,7 @@ export default function AdminLogin() {
       setShowForgotPassword(false);
       setResetEmail('');
     } catch (error: any) {
+      console.error('Password reset error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to send password reset email.",
@@ -87,6 +116,18 @@ export default function AdminLogin() {
       setResetLoading(false);
     }
   };
+
+  // Show loading while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+          <span className="text-white text-lg">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (showForgotPassword) {
     return (
@@ -106,6 +147,7 @@ export default function AdminLogin() {
                 variant="ghost"
                 onClick={() => setShowForgotPassword(false)}
                 className="w-fit p-0 h-auto font-normal text-sm"
+                disabled={resetLoading}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Login
