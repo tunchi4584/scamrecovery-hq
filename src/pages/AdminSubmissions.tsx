@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Search, Edit2, Trash2, Eye, Mail } from 'lucide-react';
+import { Search, Edit2, Trash2, Eye, Mail, Loader2 } from 'lucide-react';
 
 interface SubmissionData {
   id: string;
@@ -30,7 +30,7 @@ interface SubmissionData {
 }
 
 export default function AdminSubmissions() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<SubmissionData[]>([]);
@@ -40,29 +40,41 @@ export default function AdminSubmissions() {
   const [scamTypeFilter, setScamTypeFilter] = useState<string>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionData | null>(null);
   const [editingSubmission, setEditingSubmission] = useState<SubmissionData | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    
     if (!user || !isAdmin) {
       navigate('/admin/login');
       return;
     }
+    
     fetchSubmissions();
-  }, [user, isAdmin, navigate]);
+  }, [user, isAdmin, navigate, authLoading]);
 
   const fetchSubmissions = async () => {
     try {
+      console.log('Fetching submissions...');
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('submissions')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching submissions:', error);
+        throw error;
+      }
+      
+      console.log('Submissions fetched:', data?.length || 0);
       setSubmissions(data || []);
     } catch (error) {
-      console.error('Error fetching submissions:', error);
+      console.error('Error in fetchSubmissions:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch submissions",
+        description: "Failed to fetch submissions. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -72,8 +84,17 @@ export default function AdminSubmissions() {
 
   const updateSubmissionStatus = async (submissionId: string, status: string, internalNotes?: string) => {
     try {
+      setUpdating(submissionId);
+      console.log('Updating submission:', submissionId, 'to status:', status);
+
+      // Find the submission
+      const submission = submissions.find(sub => sub.id === submissionId);
+      if (!submission) {
+        throw new Error('Submission not found');
+      }
+
       // Update submission
-      const { data: submissionData, error: submissionError } = await supabase
+      const { data: updatedSubmission, error: submissionError } = await supabase
         .from('submissions')
         .update({ 
           status, 
@@ -84,67 +105,83 @@ export default function AdminSubmissions() {
         .select()
         .single();
 
-      if (submissionError) throw submissionError;
+      if (submissionError) {
+        console.error('Submission update error:', submissionError);
+        throw submissionError;
+      }
 
-      // Also update or create related case
-      const submission = submissions.find(sub => sub.id === submissionId);
-      if (submission) {
-        // Check if case exists
-        const { data: existingCase } = await supabase
+      console.log('Submission updated successfully');
+
+      // Update or create related case
+      const { data: existingCase } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('submission_id', submissionId)
+        .maybeSingle();
+
+      if (existingCase) {
+        console.log('Updating existing case:', existingCase.id);
+        const { error: caseError } = await supabase
           .from('cases')
-          .select('*')
-          .eq('submission_id', submissionId)
-          .single();
+          .update({
+            status,
+            amount: submission.amount_lost,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingCase.id);
 
-        if (existingCase) {
-          // Update existing case
-          const { error: caseError } = await supabase
-            .from('cases')
-            .update({
-              status,
-              amount: submission.amount_lost,
-              updated_at: new Date().toISOString()
-            })
-            .eq('submission_id', submissionId);
+        if (caseError) {
+          console.error('Case update error:', caseError);
+        }
+      } else {
+        console.log('Creating new case for submission');
+        const { error: caseError } = await supabase
+          .from('cases')
+          .insert({
+            user_id: submission.user_id,
+            title: `${submission.scam_type} Recovery Case`,
+            status,
+            amount: submission.amount_lost,
+            submission_id: submissionId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
 
-          if (caseError) throw caseError;
-        } else {
-          // Create new case
-          const { error: caseError } = await supabase
-            .from('cases')
-            .insert({
-              user_id: submission.user_id,
-              title: `${submission.scam_type} Recovery Case`,
-              status,
-              amount: submission.amount_lost,
-              submission_id: submissionId
-            });
-
-          if (caseError) throw caseError;
+        if (caseError) {
+          console.error('Case creation error:', caseError);
         }
       }
 
       // Update local state
       setSubmissions(submissions.map(sub => 
-        sub.id === submissionId ? submissionData : sub
+        sub.id === submissionId ? updatedSubmission : sub
       ));
+
+      // Send email notification
+      try {
+        console.log('Sending email notification to:', submission.email);
+        await sendEmailToUser(submission.email, submissionId, status, submission.name, submission.scam_type, submission.amount_lost, internalNotes);
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        // Don't fail the whole operation if email fails
+      }
 
       toast({
         title: "Success",
-        description: "Submission and case updated successfully",
+        description: "Submission updated successfully",
       });
+      
       setEditingSubmission(null);
-
-      // Send email notification to user
-      await sendEmailToUser(submission?.email || '', submissionId, status);
       
     } catch (error) {
       console.error('Error updating submission:', error);
       toast({
         title: "Error",
-        description: "Failed to update submission",
+        description: "Failed to update submission. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -174,7 +211,15 @@ export default function AdminSubmissions() {
     }
   };
 
-  const sendEmailToUser = async (email: string, submissionId: string, newStatus?: string) => {
+  const sendEmailToUser = async (
+    email: string, 
+    submissionId: string, 
+    newStatus?: string, 
+    userName?: string,
+    caseTitle?: string,
+    amount?: number,
+    notes?: string
+  ) => {
     try {
       const submission = submissions.find(sub => sub.id === submissionId);
       if (!submission) return;
@@ -185,18 +230,19 @@ export default function AdminSubmissions() {
         email,
         submissionId,
         status: statusToUse,
-        caseTitle: submission.scam_type,
-        amount: submission.amount_lost
+        userName,
+        caseTitle,
+        amount
       });
 
-      const { error } = await supabase.functions.invoke('send-admin-notification', {
+      const { data, error } = await supabase.functions.invoke('send-admin-notification', {
         body: {
           type: 'submission_update',
           email: email,
-          message: `Your submission "${submission.scam_type}" has been updated to status: ${statusToUse}. ${submission.internal_notes ? 'Additional notes: ' + submission.internal_notes : ''}`,
-          userName: submission.name,
-          caseTitle: submission.scam_type,
-          amount: submission.amount_lost,
+          message: `Your submission "${caseTitle || submission.scam_type}" has been updated to status: ${statusToUse}. ${notes ? 'Additional notes: ' + notes : ''}`,
+          userName: userName || submission.name,
+          caseTitle: caseTitle || submission.scam_type,
+          amount: amount || submission.amount_lost,
           status: statusToUse
         }
       });
@@ -206,6 +252,8 @@ export default function AdminSubmissions() {
         throw error;
       }
 
+      console.log('Email sent successfully:', data);
+      
       toast({
         title: "Success",
         description: `Email notification sent to ${email}`,
@@ -238,11 +286,14 @@ export default function AdminSubmissions() {
     return matchesSearch && matchesStatus && matchesScamType;
   });
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <AdminLayout title="Scam Submissions">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="text-lg">Loading submissions...</span>
+          </div>
         </div>
       </AdminLayout>
     );
@@ -396,8 +447,13 @@ export default function AdminSubmissions() {
                               size="sm"
                               variant="outline"
                               onClick={() => setEditingSubmission(submission)}
+                              disabled={updating === submission.id}
                             >
-                              <Edit2 className="h-4 w-4" />
+                              {updating === submission.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Edit2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
@@ -409,6 +465,7 @@ export default function AdminSubmissions() {
                                 submission={editingSubmission}
                                 onUpdate={updateSubmissionStatus}
                                 onCancel={() => setEditingSubmission(null)}
+                                isUpdating={updating === editingSubmission.id}
                               />
                             )}
                           </DialogContent>
@@ -417,7 +474,15 @@ export default function AdminSubmissions() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => sendEmailToUser(submission.email, submission.id)}
+                          onClick={() => sendEmailToUser(
+                            submission.email, 
+                            submission.id, 
+                            submission.status,
+                            submission.name,
+                            submission.scam_type,
+                            submission.amount_lost,
+                            submission.internal_notes
+                          )}
                         >
                           <Mail className="h-4 w-4" />
                         </Button>
@@ -454,9 +519,10 @@ interface EditSubmissionFormProps {
   submission: SubmissionData;
   onUpdate: (id: string, status: string, notes?: string) => void;
   onCancel: () => void;
+  isUpdating?: boolean;
 }
 
-function EditSubmissionForm({ submission, onUpdate, onCancel }: EditSubmissionFormProps) {
+function EditSubmissionForm({ submission, onUpdate, onCancel, isUpdating }: EditSubmissionFormProps) {
   const [status, setStatus] = useState(submission.status);
   const [internalNotes, setInternalNotes] = useState(submission.internal_notes || '');
 
@@ -469,7 +535,7 @@ function EditSubmissionForm({ submission, onUpdate, onCancel }: EditSubmissionFo
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-2">Status</label>
-        <Select value={status} onValueChange={setStatus}>
+        <Select value={status} onValueChange={setStatus} disabled={isUpdating}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -489,15 +555,23 @@ function EditSubmissionForm({ submission, onUpdate, onCancel }: EditSubmissionFo
           onChange={(e) => setInternalNotes(e.target.value)}
           placeholder="Add internal notes..."
           rows={4}
+          disabled={isUpdating}
         />
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isUpdating}>
           Cancel
         </Button>
-        <Button type="submit">
-          Update Submission
+        <Button type="submit" disabled={isUpdating}>
+          {isUpdating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            'Update Submission'
+          )}
         </Button>
       </div>
     </form>

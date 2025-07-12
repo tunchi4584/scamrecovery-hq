@@ -39,7 +39,7 @@ export default function Dashboard() {
     console.log('Setting up real-time subscription for user:', user.id);
 
     const channel = supabase
-      .channel('case-updates')
+      .channel('dashboard-updates')
       .on(
         'postgres_changes',
         {
@@ -49,7 +49,7 @@ export default function Dashboard() {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time case update:', payload);
+          console.log('Real-time case update received:', payload);
           // Refresh user data when cases are updated
           refreshUserData();
         }
@@ -63,12 +63,14 @@ export default function Dashboard() {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time submission update:', payload);
+          console.log('Real-time submission update received:', payload);
           // Refresh user data when submissions are updated
           refreshUserData();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+      });
 
     return () => {
       console.log('Cleaning up real-time subscription');
@@ -78,8 +80,14 @@ export default function Dashboard() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refreshUserData();
-    setRefreshing(false);
+    try {
+      await refreshUserData();
+      console.log('Dashboard data refreshed');
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const getStatusColor = (status: string) => {

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,15 +113,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Attempting admin login for:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (error || !data.user) {
-        console.error('Admin login error:', error);
+      if (error) {
+        console.error('Admin login auth error:', error);
         return false;
       }
+
+      if (!data.user) {
+        console.error('No user data returned');
+        return false;
+      }
+
+      console.log('Auth successful, checking admin role for user:', data.user.id);
 
       // Check if user has admin role
       const { data: roleData, error: roleError } = await supabase
@@ -128,14 +138,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('role')
         .eq('user_id', data.user.id)
         .eq('role', 'admin')
-        .single();
+        .maybeSingle();
 
-      if (roleError || roleData?.role !== 'admin') {
-        console.error('User is not admin:', roleError);
+      console.log('Role check result:', { roleData, roleError });
+
+      if (roleError || !roleData || roleData.role !== 'admin') {
+        console.error('User is not admin or role check failed:', roleError);
         await supabase.auth.signOut();
         return false;
       }
 
+      console.log('Admin login successful');
       setIsAdmin(true);
       return true;
     } catch (error) {
@@ -145,33 +158,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setIsAdmin(false);
+    try {
+      await supabase.auth.signOut();
+      setIsAdmin(false);
+      setUser(null);
+      setProfile(null);
+      setCases([]);
+      setSession(null);
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
 
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session
-    const getInitialSession = async () => {
+    const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Initializing auth...');
+        
+        // Get current session
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+        }
+
+        if (mounted && currentSession) {
+          console.log('Found existing session:', currentSession.user.email);
+          setSession(currentSession);
+          setUser(currentSession.user);
+          
+          // Check admin role and fetch data
+          const isAdminUser = await checkAdminRole();
+          if (isAdminUser) {
+            setIsAdmin(true);
+          }
+          
+          // Fetch user data
+          await fetchUserProfile(currentSession.user.id);
+          await fetchUserCases(currentSession.user.id);
+        }
         
         if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          if (session?.user) {
-            await Promise.all([
-              fetchUserProfile(session.user.id),
-              fetchUserCases(session.user.id),
-              checkAdminRole()
-            ]);
-          }
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error getting initial session:', error);
+        console.error('Auth initialization error:', error);
         if (mounted) {
           setLoading(false);
         }
@@ -188,28 +221,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Only fetch data if it's a new session or login event
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            await Promise.all([
-              fetchUserProfile(session.user.id),
-              fetchUserCases(session.user.id),
-              checkAdminRole()
-            ]);
+        if (session?.user && event === 'SIGNED_IN') {
+          console.log('User signed in, fetching data...');
+          
+          // Check admin role
+          const isAdminUser = await checkAdminRole();
+          if (isAdminUser) {
+            setIsAdmin(true);
           }
-        } else {
+          
+          // Fetch user data
+          await fetchUserProfile(session.user.id);
+          await fetchUserCases(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
           setProfile(null);
           setCases([]);
           setIsAdmin(false);
         }
         
-        if (event !== 'INITIAL_SESSION') {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     );
 
-    getInitialSession();
+    // Initialize auth
+    initializeAuth();
 
     return () => {
       mounted = false;
@@ -244,8 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setIsAdmin(false);
+    await logout();
   };
 
   const value = {

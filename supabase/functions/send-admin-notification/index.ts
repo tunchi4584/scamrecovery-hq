@@ -28,11 +28,12 @@ serve(async (req) => {
   try {
     console.log('Received notification request');
     const requestBody = await req.json();
-    console.log('Request body:', requestBody);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     const { type, email, message, userName, caseTitle, amount, status }: NotificationRequest = requestBody;
 
     if (!type || !email) {
+      console.error('Missing required fields:', { type, email });
       throw new Error('Missing required fields: type and email');
     }
 
@@ -128,7 +129,7 @@ serve(async (req) => {
             </div>
             <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196f3;">
               <p style="margin: 0; color: #1565c0; line-height: 1.6;"><strong>Update Message:</strong></p>
-              <p style="margin: 10px 0 0 0; color: #1565c0; line-height: 1.6;">${message}</p>
+              <p style="margin: 10px 0 0 0; color: #1565c0; line-height: 1.6;">${message || 'Status updated by admin team.'}</p>
             </div>
             
             ${status === 'resolved' ? `
@@ -157,11 +158,14 @@ serve(async (req) => {
         </div>
       `;
     } else {
+      console.error('Unknown notification type:', type);
       throw new Error(`Unknown notification type: ${type}`);
     }
 
-    console.log('Sending email to:', toEmail);
-    console.log('Email subject:', subject);
+    console.log('Preparing to send email:');
+    console.log('- To:', toEmail);
+    console.log('- Subject:', subject);
+    console.log('- From:', fromEmail);
 
     const emailResponse = await resend.emails.send({
       from: fromEmail,
@@ -177,6 +181,7 @@ serve(async (req) => {
         success: true,
         message: 'Email sent successfully',
         to: toEmail,
+        subject: subject,
         emailId: emailResponse.data?.id
       }),
       { 
@@ -194,7 +199,8 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message,
-        details: error.stack
+        details: error.stack,
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 500,
