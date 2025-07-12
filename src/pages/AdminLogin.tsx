@@ -23,8 +23,6 @@ export default function AdminLogin() {
 
   // Redirect if already logged in as admin
   useEffect(() => {
-    console.log('AdminLogin - Auth state check:', { authLoading, user: user?.email, isAdmin });
-    
     if (!authLoading && user && isAdmin) {
       console.log('User is already admin, redirecting to dashboard');
       navigate('/admin/dashboard', { replace: true });
@@ -50,12 +48,12 @@ export default function AdminLogin() {
       const success = await adminLogin(email, password);
       
       if (success) {
-        console.log('Admin login successful, navigating to dashboard');
+        console.log('Admin login successful, navigating to submissions');
         toast({
           title: "Admin Login Successful",
           description: "Welcome to the admin portal.",
         });
-        navigate('/admin/dashboard', { replace: true });
+        navigate('/admin/submissions', { replace: true });
       } else {
         console.log('Admin login failed');
         toast({
@@ -274,6 +272,15 @@ export default function AdminLogin() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="mt-4 text-center">
+          <Link 
+            to="/" 
+            className="text-slate-300 hover:text-white text-sm underline"
+          >
+            ← Back to Main Site
+          </Link>
+        </div>
       </div>
     </div>
   );

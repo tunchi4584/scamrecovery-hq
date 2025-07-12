@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Search, Edit2, Trash2, Eye, Mail, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, Edit2, Trash2, Eye, Mail, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface SubmissionData {
   id: string;
@@ -35,7 +35,7 @@ export default function AdminSubmissions() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<SubmissionData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -43,40 +43,14 @@ export default function AdminSubmissions() {
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionData | null>(null);
   const [editingSubmission, setEditingSubmission] = useState<SubmissionData | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Check authentication and admin status
-  useEffect(() => {
-    console.log('AdminSubmissions - Auth state:', { 
-      authLoading, 
-      user: user?.email, 
-      isAdmin 
-    });
-
-    // Wait for auth to finish loading
-    if (authLoading) {
-      console.log('Auth still loading...');
+  const fetchSubmissions = useCallback(async () => {
+    if (!user || !isAdmin) {
+      console.log('User not authenticated or not admin, skipping fetch');
       return;
     }
 
-    // Check if user is authenticated and is admin
-    if (!user) {
-      console.log('No user found, redirecting to admin login');
-      navigate('/admin/login');
-      return;
-    }
-
-    if (!isAdmin) {
-      console.log('User is not admin, redirecting to admin login');
-      navigate('/admin/login');
-      return;
-    }
-
-    // User is authenticated and is admin, fetch submissions
-    console.log('User is authenticated admin, fetching submissions');
-    fetchSubmissions();
-  }, [authLoading, user, isAdmin, navigate]);
-
-  const fetchSubmissions = async () => {
     try {
       console.log('Fetching submissions...');
       setLoading(true);
@@ -111,14 +85,44 @@ export default function AdminSubmissions() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, isAdmin, toast]);
+
+  // Check authentication and redirect if needed
+  useEffect(() => {
+    if (authLoading) {
+      console.log('Auth still loading...');
+      return;
+    }
+
+    setAuthChecked(true);
+
+    if (!user) {
+      console.log('No user found, redirecting to admin login');
+      navigate('/admin/login', { replace: true });
+      return;
+    }
+
+    if (!isAdmin) {
+      console.log('User is not admin, redirecting to admin login');
+      navigate('/admin/login', { replace: true });
+      return;
+    }
+
+    console.log('User is authenticated admin, fetching submissions');
+  }, [authLoading, user, isAdmin, navigate]);
+
+  // Fetch submissions when auth is confirmed
+  useEffect(() => {
+    if (authChecked && user && isAdmin && !authLoading) {
+      fetchSubmissions();
+    }
+  }, [authChecked, user, isAdmin, authLoading, fetchSubmissions]);
 
   const updateSubmissionStatus = async (submissionId: string, newStatus: string, internalNotes?: string) => {
     try {
       setUpdating(submissionId);
       console.log('Updating submission:', submissionId, 'to status:', newStatus);
 
-      // Find the submission
       const submission = submissions.find(sub => sub.id === submissionId);
       if (!submission) {
         throw new Error('Submission not found');
@@ -208,7 +212,6 @@ export default function AdminSubmissions() {
         );
       } catch (emailError) {
         console.error('Email sending failed:', emailError);
-        // Don't fail the whole operation if email fails
         toast({
           title: "Warning",
           description: "Status updated but email notification failed",
@@ -284,7 +287,7 @@ export default function AdminSubmissions() {
       });
     } catch (error) {
       console.error('Error sending email:', error);
-      throw error; // Re-throw to handle in caller
+      throw error;
     }
   };
 
@@ -333,7 +336,7 @@ export default function AdminSubmissions() {
   });
 
   // Show loading while auth is loading
-  if (authLoading) {
+  if (authLoading || !authChecked) {
     return (
       <AdminLayout title="Scam Submissions">
         <div className="flex items-center justify-center h-64">
@@ -375,6 +378,7 @@ export default function AdminSubmissions() {
                 className="mt-4"
                 variant="outline"
               >
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
             </div>
@@ -424,7 +428,7 @@ export default function AdminSubmissions() {
                 </SelectContent>
               </Select>
               <Button onClick={fetchSubmissions} variant="outline">
-                <Loader2 className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
             </div>
@@ -591,7 +595,7 @@ export default function AdminSubmissions() {
             </Table>
           </div>
 
-          {filteredSubmissions.length === 0 && (
+          {filteredSubmissions.length === 0 && !loading && (
             <div className="text-center py-8 text-gray-500">
               {searchTerm || statusFilter !== 'all' || scamTypeFilter !== 'all' 
                 ? 'No submissions found matching your filters.' 
