@@ -133,18 +133,18 @@ export default function Contact() {
 
       if (submissionError) throw submissionError;
 
-      // Create corresponding case
-      const { error: caseError } = await supabase
-        .from('cases')
-        .insert({
-          user_id: user.id,
-          submission_id: submission.id,
-          title: `${formData.scamType} Case`,
-          status: 'pending',
-          amount: parseFloat(formData.amountLost) || 0
-        });
+      // Create corresponding case using atomic function
+      const { data: caseData, error: caseError } = await supabase.rpc('create_case_atomic', {
+        p_user_id: user.id,
+        p_title: `${formData.scamType} Case`,
+        p_description: formData.description,
+        p_scam_type: formData.scamType,
+        p_amount: parseFloat(formData.amountLost) || 0
+      });
 
-      if (caseError) throw caseError;
+      if (caseError || !caseData?.[0]?.success) {
+        throw new Error(caseData?.[0]?.error_message || 'Failed to create case');
+      }
 
       toast({
         title: "Free Case Review Submitted!",

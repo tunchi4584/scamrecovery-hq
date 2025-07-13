@@ -43,19 +43,18 @@ export function CreateCaseModal() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('cases')
-        .insert({
-          user_id: user.id,
-          title: formData.title,
-          description: formData.description,
-          amount: parseFloat(formData.amount) || 0,
-          scam_type: formData.scam_type,
-          evidence: formData.evidence,
-          status: 'pending'
-        });
+      // Use the atomic function to create case with auto-generated case number
+      const { data, error } = await supabase.rpc('create_case_atomic', {
+        p_user_id: user.id,
+        p_title: formData.title,
+        p_description: formData.description,
+        p_scam_type: formData.scam_type,
+        p_amount: parseFloat(formData.amount) || 0
+      });
 
-      if (error) throw error;
+      if (error || !data?.[0]?.success) {
+        throw new Error(data?.[0]?.error_message || 'Failed to create case');
+      }
 
       toast({
         title: "Success",
