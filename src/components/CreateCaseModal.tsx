@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,13 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Upload, X, FileText, Image } from 'lucide-react';
-
-interface CreateCaseModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onCaseCreated: () => void;
-}
+import { Loader2, Upload, X, FileText, Image, Plus } from 'lucide-react';
 
 interface UploadedFile {
   name: string;
@@ -35,7 +29,8 @@ const SCAM_TYPES = [
   'Other'
 ];
 
-export default function CreateCaseModal({ isOpen, onClose, onCaseCreated }: CreateCaseModalProps) {
+export default function CreateCaseModal() {
+  const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [scamType, setScamType] = useState('');
@@ -247,15 +242,9 @@ export default function CreateCaseModal({ isOpen, onClose, onCaseCreated }: Crea
         description: `Recovery case "${title}" has been created successfully`
       });
 
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setScamType('');
-      setAmount('');
-      setUploadedFiles([]);
-      
-      onCaseCreated();
-      onClose();
+      // Reset form and close modal
+      resetForm();
+      setIsOpen(false);
 
     } catch (error: any) {
       console.error('Error creating case:', error);
@@ -277,10 +266,12 @@ export default function CreateCaseModal({ isOpen, onClose, onCaseCreated }: Crea
     setUploadedFiles([]);
   };
 
-  const handleClose = () => {
+  const handleClose = (open: boolean) => {
     if (!loading) {
-      resetForm();
-      onClose();
+      setIsOpen(open);
+      if (!open) {
+        resetForm();
+      }
     }
   };
 
@@ -301,6 +292,12 @@ export default function CreateCaseModal({ isOpen, onClose, onCaseCreated }: Crea
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogTrigger asChild>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Create New Case
+        </Button>
+      </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Recovery Case</DialogTitle>
@@ -440,7 +437,7 @@ export default function CreateCaseModal({ isOpen, onClose, onCaseCreated }: Crea
             <Button
               type="button"
               variant="outline"
-              onClick={handleClose}
+              onClick={() => handleClose(false)}
               disabled={loading}
             >
               Cancel
