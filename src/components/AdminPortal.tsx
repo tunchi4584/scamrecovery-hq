@@ -1,376 +1,514 @@
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Edit,
-  Save,
-  X,
-  DollarSign,
-  Calendar,
-  User,
-  Mail,
-  Phone,
-  AlertCircle,
-  Eye,
-  FileText,
-  Image,
-  Download
-} from 'lucide-react';
+import { Search, Eye, Edit, FileText, Image, Download, ExternalLink } from 'lucide-react';
 
-interface AdminCase {
+interface CaseData {
   id: string;
+  case_number: string;
   title: string;
-  status: string;
   amount: number;
-  user_id: string;
+  status: string;
   created_at: string;
   updated_at: string;
-  submission_id?: string | null;
-  description?: string;
-  evidence?: string;
-  scam_type?: string;
+  description: string;
+  scam_type: string;
+  evidence: string | null;
+  user_id: string;
+  user?: {
+    name: string;
+    email: string;
+  };
 }
 
-interface AdminUser {
-  id: string;
+interface EvidenceFile {
   name: string;
-  email: string;
-  balance: number;
-  cases: AdminCase[];
-  joinDate: string;
+  url: string;
+  type: string;
+  size: number;
 }
 
-interface AdminPortalProps {
-  users: AdminUser[];
-  onRefresh: () => void;
-}
+const CASE_STATUSES = [
+  'pending',
+  'under_review',
+  'in_progress',
+  'resolved',
+  'rejected'
+];
 
-function EvidenceViewer({ evidence }: { evidence: string }) {
-  const evidenceParts = evidence.split('\n\n---\n\n');
-  const textEvidence = evidenceParts.find(part => !part.startsWith('http')) || '';
-  const fileUrls = evidenceParts.filter(part => part.startsWith('http'));
-
-  return (
-    <div className="space-y-4">
-      {textEvidence && (
-        <div>
-          <h4 className="font-medium text-gray-900 mb-2">Text Evidence:</h4>
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{textEvidence}</p>
-          </div>
-        </div>
-      )}
-
-      {fileUrls.length > 0 && (
-        <div>
-          <h4 className="font-medium text-gray-900 mb-2">Uploaded Files:</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {fileUrls.map((url, index) => {
-              const fileName = url.split('/').pop()?.split('-').slice(1).join('-') || `File ${index + 1}`;
-              const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-              
-              return (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    {isImage ? (
-                      <Image className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-gray-600" />
-                    )}
-                    <span className="text-sm font-medium truncate">{fileName}</span>
-                  </div>
-                  
-                  {isImage && (
-                    <img 
-                      src={url} 
-                      alt={fileName}
-                      className="w-full h-32 object-cover rounded mb-2"
-                    />
-                  )}
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(url, '_blank')}
-                      className="flex-1"
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = fileName;
-                        link.click();
-                      }}
-                    >
-                      <Download className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function AdminPortal({ users, onRefresh }: AdminPortalProps) {
+export default function AdminPortal() {
+  const { isAdmin, user } = useAuth();
   const { toast } = useToast();
-  const [editingCase, setEditingCase] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ amount: string; status: string }>({ amount: '', status: '' });
+  const navigate = useNavigate();
+  const [cases, setCases] = useState<CaseData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editingCase, setEditingCase] = useState<Partial<CaseData>>({});
+  const [updating, setUpdating] = useState(false);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
-      case 'in_progress': return 'bg-blue-100 text-blue-800 border border-blue-300';
-      case 'under_review': return 'bg-purple-100 text-purple-800 border border-purple-300';
-      case 'approved': return 'bg-green-100 text-green-800 border border-green-300';
-      case 'complete': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
-      case 'closed': return 'bg-gray-100 text-gray-800 border border-gray-300';
-      default: return 'bg-gray-100 text-gray-800 border border-gray-300';
+  useEffect(() => {
+    if (!user || !isAdmin) {
+      navigate('/admin/login');
+      return;
     }
-  };
+    fetchCases();
+  }, [user, isAdmin, navigate]);
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'in_progress': return 'In Progress';
-      case 'under_review': return 'Under Review';
-      case 'approved': return 'Approved';
-      case 'complete': return 'Complete';
-      default: return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-  };
-
-  const startEditing = (caseItem: AdminCase) => {
-    setEditingCase(caseItem.id);
-    setEditValues({
-      amount: String(caseItem.amount),
-      status: caseItem.status
-    });
-  };
-
-  const cancelEditing = () => {
-    setEditingCase(null);
-    setEditValues({ amount: '', status: '' });
-  };
-
-  const saveChanges = async (caseId: string) => {
+  const fetchCases = async () => {
     try {
-      const updateData: any = { status: editValues.status };
-      const newAmount = parseFloat(editValues.amount);
-      if (!isNaN(newAmount)) {
-        updateData.amount = newAmount;
-      }
+      setLoading(true);
+      
+      // Fetch cases with user profile information
+      const { data: casesData, error } = await supabase
+        .from('cases')
+        .select(`
+          *,
+          profiles!cases_user_id_fkey(name, email)
+        `)
+        .order('created_at', { ascending: false });
 
+      if (error) throw error;
+
+      // Transform the data to match our interface
+      const transformedCases = casesData?.map(caseItem => ({
+        ...caseItem,
+        user: caseItem.profiles ? {
+          name: caseItem.profiles.name,
+          email: caseItem.profiles.email
+        } : undefined
+      })) || [];
+
+      setCases(transformedCases);
+    } catch (error) {
+      console.error('Error fetching cases:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch cases",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDetails = (caseData: CaseData) => {
+    setSelectedCase(caseData);
+    setDetailsModalOpen(true);
+  };
+
+  const handleEditCase = (caseData: CaseData) => {
+    setEditingCase(caseData);
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateCase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCase.id) return;
+
+    setUpdating(true);
+    try {
       const { error } = await supabase
         .from('cases')
-        .update(updateData)
-        .eq('id', caseId);
+        .update({
+          status: editingCase.status,
+          title: editingCase.title,
+          description: editingCase.description,
+          amount: editingCase.amount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingCase.id);
 
       if (error) throw error;
 
       toast({
-        title: "Case Updated",
-        description: `Case status updated to ${getStatusLabel(editValues.status)}`,
+        title: "Success",
+        description: "Case updated successfully"
       });
 
-      setEditingCase(null);
-      onRefresh();
+      setEditModalOpen(false);
+      setEditingCase({});
+      fetchCases();
     } catch (error) {
+      console.error('Error updating case:', error);
       toast({
         title: "Error",
         description: "Failed to update case",
         variant: "destructive"
       });
+    } finally {
+      setUpdating(false);
     }
   };
 
+  const parseEvidence = (evidenceString: string | null): EvidenceFile[] => {
+    if (!evidenceString) return [];
+    try {
+      return JSON.parse(evidenceString);
+    } catch {
+      return [];
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) {
+      return <Image className="h-4 w-4" />;
+    }
+    return <FileText className="h-4 w-4" />;
+  };
+
+  const handleDownloadFile = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'resolved':
+        return 'default';
+      case 'in_progress':
+        return 'secondary';
+      case 'under_review':
+        return 'outline';
+      case 'rejected':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const filteredCases = cases.filter(caseItem => {
+    const matchesSearch = 
+      caseItem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.case_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || caseItem.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {users.map((user) => (
-        <Card key={user.id} className="w-full shadow-lg border-0 bg-white/95 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  {user.name}
-                </CardTitle>
-                <div className="flex flex-col sm:flex-row gap-2 mt-2 text-sm opacity-90">
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-4 w-4" />
-                    {user.email}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Joined: {new Date(user.joinDate).toLocaleDateString()}
-                  </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Portal</h1>
+          <p className="text-gray-600">Manage recovery cases and user requests</p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <CardTitle>Recovery Cases ({filteredCases.length})</CardTitle>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search cases..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-full sm:w-64"
+                  />
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">${user.balance.toLocaleString()}</div>
-                <div className="text-sm opacity-90">Total Recovered</div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    {CASE_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replace('_', ' ').toUpperCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardHeader>
-          
-          <CardContent className="p-6">
-            {/* User Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Recovery Amount</p>
-                    <p className="text-2xl font-bold text-green-600">${user.balance.toLocaleString()}</p>
-                  </div>
-                  <DollarSign className="h-8 w-8 text-green-600" />
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Total Cases</p>
-                    <p className="text-2xl font-bold text-blue-600">{user.cases.length}</p>
-                  </div>
-                  <AlertCircle className="h-8 w-8 text-blue-600" />
-                </div>
-              </div>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Case #</TableHead>    
+                    <TableHead>Title</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCases.map((caseItem) => (
+                    <TableRow key={caseItem.id}>
+                      <TableCell className="font-mono text-sm">
+                        {caseItem.case_number || 'N/A'}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {caseItem.title}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{caseItem.user?.name || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{caseItem.user?.email || 'N/A'}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        ${caseItem.amount?.toLocaleString() || '0'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(caseItem.status)}>
+                          {caseItem.status.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(caseItem.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewDetails(caseItem)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditCase(caseItem)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
 
-            {/* Cases List */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-900 text-lg mb-3">Cases Management</h4>
-              
-              {user.cases.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No cases found for this user</p>
-                </div>
-              ) : (
-                user.cases.map((caseItem) => (
-                  <div key={caseItem.id} className="bg-gray-50 rounded-lg p-4 border hover:shadow-md transition-shadow">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                          <h5 className="font-medium text-gray-900 truncate">{caseItem.title}</h5>
-                          <Badge className={getStatusColor(caseItem.status)}>
-                            {getStatusLabel(caseItem.status)}
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <p>Created: {new Date(caseItem.created_at).toLocaleDateString()}</p>
-                          {caseItem.scam_type && <p>Type: {caseItem.scam_type}</p>}
-                          {caseItem.description && (
-                            <p className="line-clamp-2">Description: {caseItem.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {editingCase === caseItem.id ? (
-                        <div className="flex flex-col sm:flex-row gap-3 min-w-0 sm:min-w-96">
-                          <div className="flex-1">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="Amount"
-                              value={editValues.amount}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, amount: e.target.value }))}
-                              className="w-full"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <Select
-                              value={editValues.status}
-                              onValueChange={(value) => setEditValues(prev => ({ ...prev, status: value }))}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="in_progress">In Progress</SelectItem>
-                                <SelectItem value="under_review">Under Review</SelectItem>
-                                <SelectItem value="approved">Approved</SelectItem>
-                                <SelectItem value="complete">Complete</SelectItem>
-                                <SelectItem value="closed">Closed</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => saveChanges(caseItem.id)}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <Save className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelEditing}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                          <div className="text-right">
-                            <div className="text-lg font-semibold text-gray-900">
-                              ${Number(caseItem.amount).toLocaleString()}
-                            </div>
-                            <div className="text-sm text-gray-500">Case Amount</div>
-                          </div>
-                          <div className="flex gap-2">
-                            {caseItem.evidence && (
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button size="sm" variant="outline">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Evidence
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                                  <DialogHeader>
-                                    <DialogTitle>Case Evidence: {caseItem.title}</DialogTitle>
-                                  </DialogHeader>
-                                  <EvidenceViewer evidence={caseItem.evidence} />
-                                </DialogContent>
-                              </Dialog>
-                            )}
-                            <Button
-                              size="sm"
-                              onClick={() => startEditing(caseItem)}
-                              variant="outline"
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            {filteredCases.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'No cases found matching your criteria.' 
+                  : 'No cases found.'}
+              </div>
+            )}
           </CardContent>
         </Card>
-      ))}
+
+        {/* Case Details Modal */}
+        <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Case Details - {selectedCase?.case_number || 'N/A'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedCase && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Basic Information</h3>
+                    <div className="mt-2 space-y-2">
+                      <p><span className="font-medium">Title:</span> {selectedCase.title}</p>
+                      <p><span className="font-medium">Status:</span> 
+                        <Badge variant={getStatusBadgeVariant(selectedCase.status)} className="ml-2">
+                          {selectedCase.status.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </p>
+                      <p><span className="font-medium">Amount:</span> ${selectedCase.amount?.toLocaleString() || '0'}</p>
+                      <p><span className="font-medium">Scam Type:</span> {selectedCase.scam_type || 'N/A'}</p>
+                      <p><span className="font-medium">Created:</span> {new Date(selectedCase.created_at).toLocaleString()}</p>
+                      <p><span className="font-medium">Updated:</span> {new Date(selectedCase.updated_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-gray-900">User Information</h3>
+                    <div className="mt-2 space-y-2">
+                      <p><span className="font-medium">Name:</span> {selectedCase.user?.name || 'N/A'}</p>
+                      <p><span className="font-medium">Email:</span> {selectedCase.user?.email || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900">Description</h3>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                    <p className="whitespace-pre-wrap">{selectedCase.description || 'No description provided.'}</p>
+                  </div>
+                </div>
+
+                {selectedCase.evidence && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Evidence Files</h3>
+                    <div className="mt-2 space-y-3">
+                      {parseEvidence(selectedCase.evidence).map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {getFileIcon(file.type)}
+                            <div>
+                              <p className="font-medium">{file.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {formatFileSize(file.size)} • {file.type}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(file.url, '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadFile(file.url, file.name)}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Case Modal */}
+        <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Case - {editingCase.case_number || 'N/A'}</DialogTitle>
+            </DialogHeader>
+            
+            <form onSubmit={handleUpdateCase} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Title
+                </label>
+                <Input
+                  value={editingCase.title || ''}
+                  onChange={(e) => setEditingCase({...editingCase, title: e.target.value})}
+                  disabled={updating}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Status
+                </label>
+                <Select 
+                  value={editingCase.status || ''} 
+                  onValueChange={(value) => setEditingCase({...editingCase, status: value})}
+                  disabled={updating}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CASE_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replace('_', ' ').toUpperCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount (USD)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editingCase.amount || ''}
+                  onChange={(e) => setEditingCase({...editingCase, amount: parseFloat(e.target.value) || 0})}
+                  disabled={updating}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <Textarea
+                  value={editingCase.description || ''}
+                  onChange={(e) => setEditingCase({...editingCase, description: e.target.value})}
+                  className="min-h-[100px]"
+                  disabled={updating}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditModalOpen(false)}
+                  disabled={updating}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updating}>
+                  {updating ? 'Updating...' : 'Update Case'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
