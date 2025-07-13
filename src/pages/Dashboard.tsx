@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -9,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CaseDetailsModal } from '@/components/CaseDetailsModal';
-import { CreateCaseModal } from '@/components/CreateCaseModal';
+import CreateCaseModal from '@/components/CreateCaseModal';
 import { UserBalanceCard } from '@/components/UserBalanceCard';
 import { CaseDetailsView } from '@/components/CaseDetailsView';
 import { 
