@@ -176,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const adminLogin = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -186,15 +186,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
+      if (!data.user) {
+        console.error('No user data after login');
+        return false;
+      }
+
       // Check if user has admin role after login
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user?.id)
+        .eq('user_id', data.user.id)
         .eq('role', 'admin')
         .single();
 
-      return !!roleData;
+      const hasAdminRole = !!roleData;
+      console.log('Admin role check result:', hasAdminRole);
+      
+      return hasAdminRole;
     } catch (error) {
       console.error('Admin login error:', error);
       return false;
