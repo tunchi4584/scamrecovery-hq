@@ -77,6 +77,24 @@ export default function AdminBalances() {
     recoveryNotes: string
   ) => {
     try {
+      console.log('Admin updating balance:', { balanceId, amountRecovered, recoveryNotes });
+      console.log('Current user:', user?.id, 'isAdmin:', isAdmin);
+      
+      // First verify admin status
+      const { data: roleCheck, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (roleError || !roleCheck) {
+        console.error('Admin role verification failed:', roleError);
+        throw new Error('Admin privileges required');
+      }
+
+      console.log('Admin role verified, proceeding with update');
+
       const { error } = await supabase
         .from('balances')
         .update({ 
@@ -86,7 +104,12 @@ export default function AdminBalances() {
         })
         .eq('id', balanceId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+
+      console.log('Balance update successful');
 
       setBalances(balances.map(balance => 
         balance.id === balanceId 
@@ -104,11 +127,11 @@ export default function AdminBalances() {
         description: "Balance updated successfully",
       });
       setEditingBalance(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating balance:', error);
       toast({
         title: "Error",
-        description: "Failed to update balance",
+        description: error.message || "Failed to update balance",
         variant: "destructive"
       });
     }
