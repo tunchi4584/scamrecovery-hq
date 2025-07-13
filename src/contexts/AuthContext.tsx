@@ -290,8 +290,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (session?.user) {
           setUser(session.user);
-          // Only fetch data if we don't already have it or if it's a new user
-          if (!user || user.id !== session.user.id) {
+          // Fetch data for new user sessions, but avoid duplicate fetches
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             await fetchUserData(session.user);
           }
         } else {
