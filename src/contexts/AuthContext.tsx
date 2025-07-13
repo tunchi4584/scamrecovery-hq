@@ -13,7 +13,7 @@ interface Profile {
   updated_at: string;
 }
 
-interface Case {
+export interface UserCase {
   id: string;
   user_id: string;
   title: string;
@@ -23,6 +23,7 @@ interface Case {
   evidence: string | null;
   status: string;
   case_number: string | null;
+  submission_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,12 +44,15 @@ interface Balance {
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
-  cases: Case[];
+  cases: UserCase[];
   balance: Balance | null;
   loading: boolean;
   isAdmin: boolean;
   refreshUserData: () => Promise<void>;
   signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
+  adminLogin: (email: string, password: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -60,6 +64,9 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   refreshUserData: async () => {},
   signOut: async () => {},
+  signIn: async () => ({ error: null }),
+  signUp: async () => ({ error: null }),
+  adminLogin: async () => false,
 });
 
 export const useAuth = () => {
@@ -73,11 +80,76 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [cases, setCases] = useState<Case[]>([]);
+  const [cases, setCases] = useState<UserCase[]>([]);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name: name,
+          }
+        }
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const adminLogin = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Admin login error:', error);
+        return false;
+      }
+
+      // Check if user has admin role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (roleError || !roleData) {
+        console.log('User is not an admin');
+        await supabase.auth.signOut();
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      return false;
+    }
+  };
 
   const fetchUserData = async (currentUser: User) => {
     try {
@@ -241,6 +313,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         refreshUserData,
         signOut,
+        signIn,
+        signUp,
+        adminLogin,
       }}
     >
       {children}
