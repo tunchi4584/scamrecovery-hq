@@ -66,8 +66,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getSession = async () => {
       try {
+        console.log('AuthProvider initializing...');
+        console.log('Getting initial session...');
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          console.log('Setting user from session:', session.user.id);
           setUser(session.user);
           await refreshUserData(session.user);
         }
@@ -80,10 +83,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await refreshUserData(session.user);
+        console.log('User signed in, fetching data...');
+        console.log('Fetching user data for:', session.user.id);
+        // Use setTimeout to avoid blocking the auth state change
+        setTimeout(() => {
+          refreshUserData(session.user);
+        }, 0);
       } else {
         setProfile(null);
         setCases([]);
@@ -93,7 +102,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Failsafe to ensure loading doesn't stay true indefinitely
+    const timeout = setTimeout(() => {
+      console.log('Failsafe: Setting loading to false after 5 seconds');
+      setLoading(false);
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const refreshUserData = async (currentUser?: User) => {
