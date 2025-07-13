@@ -39,23 +39,76 @@ export function CreateCaseModal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      console.error('No user found');
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a case.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('cases')
-        .insert({
-          user_id: user.id,
-          title: formData.title,
-          description: formData.description,
-          amount: parseFloat(formData.amount) || 0,
-          scam_type: formData.scam_type,
-          evidence: formData.evidence,
-          status: 'pending'
-        });
+      console.log('Creating case for user:', user.id);
+      console.log('Form data:', formData);
 
-      if (error) throw error;
+      // First, ensure user has a balance record
+      const { data: existingBalance, error: balanceCheckError } = await supabase
+        .from('balances')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (balanceCheckError) {
+        console.error('Error checking balance:', balanceCheckError);
+      }
+
+      // Create balance record if it doesn't exist
+      if (!existingBalance) {
+        console.log('Creating balance record for user');
+        const { error: balanceCreateError } = await supabase
+          .from('balances')
+          .insert({
+            user_id: user.id,
+            amount_lost: 0,
+            amount_recovered: 0,
+            total_cases: 0,
+            completed_cases: 0,
+            pending_cases: 0
+          });
+
+        if (balanceCreateError) {
+          console.error('Error creating balance record:', balanceCreateError);
+        }
+      }
+
+      // Create the case
+      const caseData = {
+        user_id: user.id,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        amount: parseFloat(formData.amount) || 0,
+        scam_type: formData.scam_type,
+        evidence: formData.evidence.trim() || null,
+        status: 'pending'
+      };
+
+      console.log('Inserting case with data:', caseData);
+
+      const { data: newCase, error: caseError } = await supabase
+        .from('cases')
+        .insert(caseData)
+        .select()
+        .single();
+
+      if (caseError) {
+        console.error('Error creating case:', caseError);
+        throw caseError;
+      }
+
+      console.log('Case created successfully:', newCase);
 
       toast({
         title: "Success",
@@ -72,12 +125,17 @@ export function CreateCaseModal() {
       });
 
       setOpen(false);
-      refreshUserData();
+      
+      // Refresh user data to show the new case
+      setTimeout(() => {
+        refreshUserData();
+      }, 500);
+
     } catch (error) {
-      console.error('Error creating case:', error);
+      console.error('Error in case creation process:', error);
       toast({
         title: "Error",
-        description: "Failed to create case. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create case. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -115,7 +173,11 @@ export function CreateCaseModal() {
 
           <div>
             <Label htmlFor="scam_type">Scam Type *</Label>
-            <Select value={formData.scam_type} onValueChange={(value) => setFormData(prev => ({ ...prev, scam_type: value }))}>
+            <Select 
+              value={formData.scam_type} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, scam_type: value }))}
+              required
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select the type of scam" />
               </SelectTrigger>
