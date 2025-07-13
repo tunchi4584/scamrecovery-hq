@@ -24,9 +24,20 @@ export default function Index() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Redirect to contact page
+    
+    if (!user) {
+      toast({
+        title: "Account Required",
+        description: "Please create a free account to submit your case for review.",
+        variant: "destructive"
+      });
+      navigate('/register');
+      return;
+    }
+
+    // Redirect to contact page for actual submission
     navigate('/contact');
   };
 
@@ -184,16 +195,23 @@ export default function Index() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl lg:text-5xl font-bold text-foreground dark:text-white mb-6">
-              Contact Our Experts
+              Free Case Review
             </h2>
             <p className="text-xl text-muted-foreground leading-relaxed">
-              Get in touch with our professional team for consultation and guidance.
+              Get a professional assessment of your case at no cost. Our experts will review your situation and provide guidance.
             </p>
+            {!user && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800 text-lg font-medium">
+                  ⚠️ Please create a free account to submit your case for review
+                </p>
+              </div>
+            )}
           </div>
 
           <Card>
             <CardContent className="p-8">
-              <form onSubmit={handleContactSubmit} className="space-y-6">
+              <form onSubmit={handleReviewSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-lg font-medium text-foreground dark:text-white mb-2">
@@ -279,12 +297,12 @@ export default function Index() {
                     className="text-lg"
                     rows={5}
                     placeholder="Please provide details about what happened, when it occurred, and any relevant information..."
-                    disabled={false}
+                    disabled={!user}
                   />
                 </div>
 
                 <Button type="submit" size="lg" className="w-full text-lg py-4">
-                  Contact Us
+                  {!user ? 'Create Account to Submit' : 'Submit Free Case Review'}
                 </Button>
               </form>
             </CardContent>

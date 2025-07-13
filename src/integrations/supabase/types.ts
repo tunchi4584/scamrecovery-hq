@@ -55,57 +55,20 @@ export type Database = {
           {
             foreignKeyName: "balances_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      case_updates: {
-        Row: {
-          case_id: string
-          created_at: string
-          id: string
-          message: string
-          status: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          case_id: string
-          created_at?: string
-          id?: string
-          message: string
-          status?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          case_id?: string
-          created_at?: string
-          id?: string
-          message?: string
-          status?: string | null
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "case_updates_case_id_fkey"
-            columns: ["case_id"]
             isOneToOne: false
-            referencedRelation: "cases"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
       cases: {
         Row: {
-          admin_notes: string | null
           amount: number
-          case_number: string
+          case_number: string | null
           created_at: string
           description: string | null
           evidence: string | null
           id: string
-          last_updated_by: string | null
           scam_type: string | null
           status: string
           submission_id: string | null
@@ -114,14 +77,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          admin_notes?: string | null
           amount?: number
-          case_number: string
+          case_number?: string | null
           created_at?: string
           description?: string | null
           evidence?: string | null
           id?: string
-          last_updated_by?: string | null
           scam_type?: string | null
           status?: string
           submission_id?: string | null
@@ -130,14 +91,12 @@ export type Database = {
           user_id: string
         }
         Update: {
-          admin_notes?: string | null
           amount?: number
-          case_number?: string
+          case_number?: string | null
           created_at?: string
           description?: string | null
           evidence?: string | null
           id?: string
-          last_updated_by?: string | null
           scam_type?: string | null
           status?: string
           submission_id?: string | null
@@ -271,25 +230,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_case_update: {
-        Args: { p_case_id: string; p_message: string; p_status?: string }
-        Returns: string
-      }
-      create_case_atomic: {
-        Args: {
-          p_user_id: string
-          p_title: string
-          p_description: string
-          p_scam_type: string
-          p_amount: number
-        }
-        Returns: {
-          case_id: string
-          case_number: string
-          success: boolean
-          error_message: string
-        }[]
-      }
       generate_case_number: {
         Args: Record<PropertyKey, never>
         Returns: string
