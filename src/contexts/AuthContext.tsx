@@ -153,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserData = async (currentUser: User) => {
     try {
-      console.log('Refreshing user data for:', currentUser.id);
+      console.log('Fetching user data for:', currentUser.id);
 
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
@@ -164,10 +164,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        throw profileError;
+      } else {
+        setProfile(profileData);
       }
-
-      setProfile(profileData);
 
       // Fetch cases
       const { data: casesData, error: casesError } = await supabase
@@ -178,10 +177,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (casesError) {
         console.error('Error fetching cases:', casesError);
-        throw casesError;
+      } else {
+        setCases(casesData || []);
       }
-
-      setCases(casesData || []);
 
       // Fetch balance - handle potential duplicates
       const { data: balanceData, error: balanceError } = await supabase
@@ -194,7 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (balanceError) {
         console.error('Error fetching balance:', balanceError);
-        // Don't throw error for balance, create one if needed
       } else {
         setBalance(balanceData);
       }
@@ -252,40 +249,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Error getting session:', error);
-          setLoading(false);
+          if (mounted) {
+            setLoading(false);
+          }
           return;
         }
 
-        if (session?.user) {
-          console.log('Auth state changed: INITIAL_SESSION', session.user.id);
+        if (session?.user && mounted) {
+          console.log('Initial session found for user:', session.user.id);
           setUser(session.user);
           await fetchUserData(session.user);
+        } else {
+          console.log('No initial session found');
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    getInitialSession();
-
-    // Listen for auth changes
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id || 'no user');
         
+        if (!mounted) return;
+
         if (session?.user) {
           setUser(session.user);
-          await fetchUserData(session.user);
+          // Only fetch data if we don't already have it or if it's a new user
+          if (!user || user.id !== session.user.id) {
+            await fetchUserData(session.user);
+          }
         } else {
+          console.log('No session, clearing user data');
           setUser(null);
           setProfile(null);
           setCases([]);
@@ -297,10 +307,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Initialize
+    getInitialSession();
+
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Empty dependency array is correct here
 
   return (
     <AuthContext.Provider
