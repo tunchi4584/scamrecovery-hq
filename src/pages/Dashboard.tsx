@@ -1,9 +1,13 @@
 
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserBalanceCard } from "@/components/UserBalanceCard";
+import { CaseStatusUpdates } from "@/components/CaseStatusUpdates";
+import { CaseDetailsModal } from "@/components/CaseDetailsModal";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 import { 
   FileText, 
@@ -12,12 +16,14 @@ import {
   CheckCircle, 
   Clock,
   TrendingUp,
-  Eye
+  Eye,
+  Plus
 } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, profile, cases, balance, loading } = useAuth();
   const navigate = useNavigate();
+  const [selectedCase, setSelectedCase] = useState<any>(null);
 
   if (loading) {
     return (
@@ -32,163 +38,178 @@ export default function Dashboard() {
     return null;
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'under_review': return 'bg-purple-100 text-purple-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'complete': return 'bg-emerald-100 text-emerald-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />;
-      case 'in_progress': return <TrendingUp className="h-4 w-4" />;
-      case 'under_review': return <Eye className="h-4 w-4" />;
+      case 'pending': return 'outline';
+      case 'in_progress': return 'default';
+      case 'under_review': return 'secondary';
       case 'resolved': 
-      case 'complete': return <CheckCircle className="h-4 w-4" />;
+      case 'complete': return 'default';
       case 'rejected': 
-      case 'closed': return <AlertCircle className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
+      case 'closed': return 'destructive';
+      default: return 'outline';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome, {profile?.name || user.email}
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Manage your recovery cases and track progress
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-2">
+            Welcome, {profile?.name || user.email}
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your recovery cases and track progress
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <UserBalanceCard />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Cases</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{cases?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Total cases filed
               </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Balance Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Amount Lost</CardTitle>
-              <DollarSign className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                ${balance?.amount_lost?.toLocaleString() || '0'}
-              </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Amount Recovered</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-500" />
+              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                ${balance?.amount_recovered?.toLocaleString() || '0'}
+              <div className="text-2xl font-bold">
+                {cases?.filter(c => c.status === 'pending').length || 0}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Awaiting review
+              </p>
             </CardContent>
           </Card>
-
-          <Card>
+          <Card className="bg-primary/5 border-primary/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
-              <FileText className="h-4 w-4 text-blue-500" />
+              <CardTitle className="text-sm font-medium">File New Case</CardTitle>
+              <Plus className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {cases?.length || 0}
-              </div>
+              <Link to="/file-case">
+                <Button className="w-full" size="sm">
+                  Report Scam
+                </Button>
+              </Link>
+              <p className="text-xs text-muted-foreground mt-2">
+                Start a new case report
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Cases List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Cases</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {cases && cases.length > 0 ? (
-              <div className="space-y-4">
-                {cases.map((caseItem) => (
-                  <div
-                    key={caseItem.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">
-                          {caseItem.title}
-                        </h3>
-                        <Badge className={getStatusColor(caseItem.status)}>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon(caseItem.status)}
-                            {caseItem.status.replace('_', ' ').toUpperCase()}
-                          </div>
-                        </Badge>
-                      </div>
-                      
-                      <div className="text-sm text-gray-600 space-y-1">
-                        {caseItem.case_number && (
-                          <p><span className="font-medium">Case #:</span> {caseItem.case_number}</p>
-                        )}
-                        <p><span className="font-medium">Amount:</span> ${caseItem.amount?.toLocaleString() || '0'}</p>
-                        {caseItem.scam_type && (
-                          <p><span className="font-medium">Type:</span> {caseItem.scam_type}</p>
-                        )}
-                        <p><span className="font-medium">Created:</span> {new Date(caseItem.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        console.log('View case:', caseItem.id);
-                      }}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Cases</CardTitle>
+              <CardDescription>
+                Your recently filed cases and their current status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!cases || cases.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    No cases filed yet.
+                  </p>
+                  <Link to="/file-case">
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      File Your First Case
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cases.slice(0, 5).map((case_) => (
+                    <div
+                      key={case_.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => setSelectedCase(case_)}
                     >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{case_.case_number}</span>
+                          <Badge variant={getStatusVariant(case_.status)}>
+                            {case_.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          {case_.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ${case_.amount.toLocaleString()} • {case_.scam_type}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        View Details
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {cases && cases.length > 0 && selectedCase ? (
+            <CaseStatusUpdates
+              caseId={selectedCase.id}
+              caseNumber={selectedCase.case_number}
+              status={selectedCase.status}
+              amount={selectedCase.amount}
+              createdAt={selectedCase.created_at}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Common actions and helpful resources
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Link to="/file-case">
+                  <Button className="w-full">
+                    <Plus className="mr-2 h-4 w-4" />
+                    File a New Case
+                  </Button>
+                </Link>
+                <div className="grid gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    Need help with your case? Contact our support team for assistance.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Case Guidelines
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      Get Help
                     </Button>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No cases yet</h3>
-                <p className="text-gray-500">
-                  Your recovery cases will appear here when available
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
-        {/* Recovery Notes */}
-        {balance?.recovery_notes && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Recovery Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-blue-800">{balance.recovery_notes}</p>
-              </div>
-            </CardContent>
-          </Card>
+        {selectedCase && (
+          <CaseDetailsModal case_={selectedCase}>
+            <div></div>
+          </CaseDetailsModal>
         )}
       </div>
     </div>
