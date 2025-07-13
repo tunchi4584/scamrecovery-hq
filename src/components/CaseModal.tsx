@@ -43,6 +43,9 @@ export function CaseModal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Starting case creation process...');
+    console.log('User:', user?.id);
+    
     if (!user?.id) {
       toast({
         title: "Error",
@@ -72,9 +75,16 @@ export function CaseModal() {
     }
 
     setIsSubmitting(true);
+    console.log('Submitting case with data:', {
+      user_id: user.id,
+      title: title.trim(),
+      description: description.trim(),
+      scam_type: scamType,
+      amount: amountNum
+    });
     
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('cases')
         .insert({
           user_id: user.id,
@@ -83,12 +93,15 @@ export function CaseModal() {
           scam_type: scamType,
           amount: amountNum,
           status: 'pending'
-        });
+        })
+        .select();
 
       if (error) {
-        console.error('Database error:', error);
+        console.error('Supabase error:', error);
         throw error;
       }
+
+      console.log('Case created successfully:', data);
 
       toast({
         title: "Success",
@@ -99,7 +112,9 @@ export function CaseModal() {
       setIsOpen(false);
       
       // Refresh user data to show new case
+      console.log('Refreshing user data...');
       await refreshUserData();
+      console.log('User data refreshed');
 
     } catch (error: any) {
       console.error('Case creation failed:', error);
