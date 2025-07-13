@@ -62,94 +62,136 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [balance, setBalance] = useState<UserBalance | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const getSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          await refreshUserData(session.user);
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await refreshUserData(session.user);
-      } else {
-        setProfile(null);
-        setCases([]);
-        setBalance(null);
-        setIsAdmin(false);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const [refreshing, setRefreshing] = useState(false);
 
   const refreshUserData = async (currentUser?: User) => {
     const userToUse = currentUser || user;
-    if (!userToUse) return;
+    if (!userToUse || refreshing) {
+      console.log('No user to refresh data for or already refreshing');
+      return;
+    }
 
+    setRefreshing(true);
     try {
       console.log('Refreshing user data for:', userToUse.id);
 
       // Fetch profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userToUse.id)
         .single();
 
-      if (profileData) {
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      } else if (profileData) {
         setProfile(profileData);
       }
 
       // Fetch cases
-      const { data: casesData } = await supabase
+      const { data: casesData, error: casesError } = await supabase
         .from('cases')
         .select('*')
         .eq('user_id', userToUse.id)
         .order('created_at', { ascending: false });
 
-      if (casesData) {
-        setCases(casesData);
+      if (casesError) {
+        console.error('Error fetching cases:', casesError);
+      } else if (casesData) {
+        setCases(casesData || []);
       }
 
       // Fetch balance
-      const { data: balanceData } = await supabase
+      const { data: balanceData, error: balanceError } = await supabase
         .from('balances')
         .select('*')
         .eq('user_id', userToUse.id)
         .single();
 
-      if (balanceData) {
+      if (balanceError) {
+        console.error('Error fetching balance:', balanceError);
+      } else if (balanceData) {
         setBalance(balanceData);
       }
 
       // Check admin role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userToUse.id)
         .eq('role', 'admin')
         .single();
 
-      setIsAdmin(!!roleData);
+      if (roleError) {
+        console.log('No admin role found (this is normal for regular users)');
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(!!roleData);
+      }
 
     } catch (error) {
       console.error('Error refreshing user data:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const getSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting session:", error);
+          return;
+        }
+        
+        if (mounted) {
+          if (session?.user) {
+            setUser(session.user);
+            await refreshUserData(session.user);
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (mounted) {
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Use setTimeout to avoid blocking the auth state change
+          setTimeout(() => {
+            if (mounted) {
+              refreshUserData(session.user);
+            }
+          }, 0);
+        } else {
+          setProfile(null);
+          setCases([]);
+          setBalance(null);
+          setIsAdmin(false);
+        }
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []); // Remove refreshUserData from dependencies to prevent loops
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

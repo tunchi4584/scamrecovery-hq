@@ -34,7 +34,9 @@ export default function Dashboard() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
 
   useEffect(() => {
+    console.log('Dashboard effect - loading:', loading, 'user:', !!user);
     if (!loading && !user) {
+      console.log('Redirecting to login - no user found');
       navigate('/login');
     }
   }, [user, loading, navigate]);
@@ -147,7 +149,9 @@ export default function Dashboard() {
   const inProgressCases = cases.filter(case_ => case_.status === 'in_progress').length;
   const pendingCases = cases.filter(case_ => case_.status === 'pending').length;
 
+  // Show loading state
   if (loading) {
+    console.log('Dashboard showing loading state');
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <Header />
@@ -163,9 +167,13 @@ export default function Dashboard() {
     );
   }
 
+  // Show nothing if no user (will redirect)
   if (!user) {
+    console.log('Dashboard - no user, should redirect');
     return null;
   }
+
+  console.log('Dashboard rendering with user:', user.id, 'cases:', cases.length);
 
   // Render case details view if not on dashboard
   if (currentView !== 'dashboard') {
@@ -333,7 +341,7 @@ export default function Dashboard() {
                             <Badge variant="outline" className="font-mono text-xs">
                               {case_.case_number || 'Generating...'}
                             </Badge>
-                            <Badge className={`bg-yellow-100 text-yellow-800 border-yellow-200 font-medium`}>
+                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 font-medium">
                               {case_.status.charAt(0).toUpperCase() + case_.status.slice(1).replace('_', ' ')}
                             </Badge>
                           </div>
