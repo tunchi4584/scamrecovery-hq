@@ -124,6 +124,24 @@ export default function AdminUserAccounts() {
 
   const updateUserBalance = async (userId: string, amountLost: number, amountRecovered: number, notes: string) => {
     try {
+      console.log('Admin updating user balance:', { userId, amountLost, amountRecovered, notes });
+      console.log('Current admin user:', user?.id, 'isAdmin:', isAdmin);
+      
+      // Verify admin status first
+      const { data: roleCheck, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (roleError || !roleCheck) {
+        console.error('Admin role verification failed:', roleError);
+        throw new Error('Admin privileges required');
+      }
+
+      console.log('Admin role verified, updating balance');
+
       const { error } = await supabase
         .from('balances')
         .upsert({
@@ -134,7 +152,12 @@ export default function AdminUserAccounts() {
           updated_at: new Date().toISOString()
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Balance update error:', error);
+        throw error;
+      }
+
+      console.log('Balance updated successfully');
 
       toast({
         title: "Success",
@@ -142,11 +165,11 @@ export default function AdminUserAccounts() {
       });
 
       fetchUserAccounts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating balance:', error);
       toast({
         title: "Error",
-        description: "Failed to update user balance",
+        description: error.message || "Failed to update user balance",
         variant: "destructive"
       });
     }
@@ -154,15 +177,39 @@ export default function AdminUserAccounts() {
 
   const updateCaseStatus = async (caseId: string, status: string) => {
     try {
+      console.log('Admin updating case status:', { caseId, status });
+      console.log('Current admin user:', user?.id, 'isAdmin:', isAdmin);
+      
+      // Verify admin status first
+      const { data: roleCheck, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (roleError || !roleCheck) {
+        console.error('Admin role verification failed:', roleError);
+        throw new Error('Admin privileges required');
+      }
+
+      console.log('Admin role verified, updating case status');
+
       const { error } = await supabase
         .from('cases')
         .update({ 
           status,
+          last_updated_by: user?.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', caseId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Case status update error:', error);
+        throw error;
+      }
+
+      console.log('Case status updated successfully');
 
       toast({
         title: "Success",
@@ -170,11 +217,11 @@ export default function AdminUserAccounts() {
       });
 
       fetchUserAccounts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating case status:', error);
       toast({
         title: "Error",
-        description: "Failed to update case status",
+        description: error.message || "Failed to update case status",
         variant: "destructive"
       });
     }
@@ -182,6 +229,24 @@ export default function AdminUserAccounts() {
 
   const toggleUserActive = async (userId: string, isActive: boolean) => {
     try {
+      console.log('Admin toggling user active status:', { userId, isActive });
+      console.log('Current admin user:', user?.id, 'isAdmin:', isAdmin);
+      
+      // Verify admin status first
+      const { data: roleCheck, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (roleError || !roleCheck) {
+        console.error('Admin role verification failed:', roleError);
+        throw new Error('Admin privileges required');
+      }
+
+      console.log('Admin role verified, toggling user status');
+
       const { error } = await supabase
         .from('profiles')
         .update({ 
@@ -190,7 +255,12 @@ export default function AdminUserAccounts() {
         })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('User status update error:', error);
+        throw error;
+      }
+
+      console.log('User status updated successfully');
 
       toast({
         title: "Success",
@@ -198,11 +268,11 @@ export default function AdminUserAccounts() {
       });
 
       fetchUserAccounts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user status:', error);
       toast({
         title: "Error",
-        description: "Failed to update user status",
+        description: error.message || "Failed to update user status",
         variant: "destructive"
       });
     }
