@@ -73,8 +73,13 @@ export function NewCaseDialog() {
     });
     
     try {
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
+      );
+      
       // Use the atomic database function that handles both case creation and balance updates
-      const { data, error } = await supabase.rpc('create_case_atomic', {
+      const rpcPromise = supabase.rpc('create_case_atomic', {
         p_user_id: user.id,
         p_title: title.trim(),
         p_description: description.trim() || null,
@@ -82,22 +87,25 @@ export function NewCaseDialog() {
         p_amount: amountValue
       });
 
+      const rpcResult = await Promise.race([rpcPromise, timeoutPromise]) as any;
+      const { data, error } = rpcResult;
+
       if (error) {
         console.error('Atomic case creation error:', error);
         throw new Error(error.message || 'Failed to create case');
       }
 
-      const result = data?.[0];
-      if (!result?.success) {
-        console.error('Case creation failed:', result?.error_message);
-        throw new Error(result?.error_message || 'Case creation failed');
+      const caseResult = data?.[0];
+      if (!caseResult?.success) {
+        console.error('Case creation failed:', caseResult?.error_message);
+        throw new Error(caseResult?.error_message || 'Case creation failed');
       }
 
-      console.log('Case created successfully:', result);
+      console.log('Case created successfully:', caseResult);
 
       toast({
         title: "Success",
-        description: `Case ${result.case_number} created successfully!`
+        description: `Case ${caseResult.case_number} created successfully!`
       });
 
       // Reset form
