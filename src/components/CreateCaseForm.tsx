@@ -27,13 +27,64 @@ interface CreateCaseFormProps {
 }
 
 export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [scamType, setScamType] = useState('');
-  const [amount, setAmount] = useState('');
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    scamType: '',
+    amount: ''
+  });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user, refreshUserData } = useAuth();
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      scamType: '',
+      amount: ''
+    });
+  };
+
+  const validateForm = () => {
+    if (!formData.title.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a case title",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.description.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a description",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.scamType) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a scam type",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.amount || isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid amount",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,36 +98,20 @@ export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
       return;
     }
 
-    if (!title.trim() || !description.trim() || !scamType || !amount) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount < 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid amount",
-        variant: "destructive"
-      });
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
-    console.log('Creating case for user:', user.id);
+    console.log('Starting case creation for user:', user.id);
 
     try {
-      // Create the case directly - the database trigger will handle balance updates
       const caseData = {
         user_id: user.id,
-        title: title.trim(),
-        description: description.trim(),
-        scam_type: scamType,
-        amount: parsedAmount,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        scam_type: formData.scamType,
+        amount: parseFloat(formData.amount),
         status: 'pending'
       };
 
@@ -90,18 +125,24 @@ export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
 
       if (caseError) {
         console.error('Case creation error:', caseError);
-        throw caseError;
+        throw new Error(caseError.message || 'Failed to create case');
       }
 
       console.log('Case created successfully:', newCase);
 
-      // Refresh user data to update the UI
-      await refreshUserData();
-
+      // Show success message
       toast({
-        title: "Case Created",
-        description: `Recovery case "${title}" has been created successfully`
+        title: "Success!",
+        description: `Recovery case "${formData.title}" has been created successfully`
       });
+
+      // Reset form
+      resetForm();
+
+      // Refresh user data in background
+      setTimeout(() => {
+        refreshUserData().catch(console.error);
+      }, 100);
 
       // Call success callback
       onSuccess();
@@ -118,14 +159,19 @@ export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
     }
   };
 
+  const handleCancel = () => {
+    resetForm();
+    onCancel();
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="title">Case Title *</Label>
         <Input
           id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={formData.title}
+          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
           placeholder="Enter a descriptive title for your case"
           disabled={loading}
           required
@@ -134,7 +180,11 @@ export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="scam-type">Scam Type *</Label>
-        <Select value={scamType} onValueChange={setScamType} disabled={loading}>
+        <Select 
+          value={formData.scamType} 
+          onValueChange={(value) => setFormData(prev => ({ ...prev, scamType: value }))} 
+          disabled={loading}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select the type of scam" />
           </SelectTrigger>
@@ -155,8 +205,8 @@ export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
           type="number"
           step="0.01"
           min="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          value={formData.amount}
+          onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
           placeholder="0.00"
           disabled={loading}
           required
@@ -167,8 +217,8 @@ export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
         <Label htmlFor="description">Description *</Label>
         <Textarea
           id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
           placeholder="Provide detailed information about the scam incident..."
           className="min-h-[120px]"
           disabled={loading}
@@ -180,7 +230,7 @@ export function CreateCaseForm({ onSuccess, onCancel }: CreateCaseFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={onCancel}
+          onClick={handleCancel}
           disabled={loading}
         >
           Cancel
