@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Case } from '@/contexts/AuthContext';
+import { UserCase } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 interface CaseDetailsModalProps {
-  case_: Case;
+  case_: UserCase;
   children: React.ReactNode;
 }
 

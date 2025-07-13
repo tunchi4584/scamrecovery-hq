@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,20 +11,31 @@ interface UserProfile {
   created_at: string;
 }
 
-interface UserCase {
+export interface UserCase {
   id: string;
   title: string;
   amount: number;
   status: string;
   created_at: string;
+  updated_at: string;
   case_number: string | null;
+  description: string | null;
+  scam_type: string | null;
+  evidence: string | null;
+  submission_id: string | null;
 }
+
+// Export Case as alias for UserCase for backward compatibility
+export type Case = UserCase;
 
 interface UserBalance {
   id: string;
   amount_lost: number;
   amount_recovered: number;
   recovery_notes: string | null;
+  total_cases: number;
+  completed_cases: number;
+  pending_cases: number;
 }
 
 interface AuthContextType {
@@ -35,6 +47,10 @@ interface AuthContextType {
   loading: boolean;
   refreshUserData: () => Promise<void>;
   signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
+  adminLogin: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,9 +78,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getSession();
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const setSession = (session: Session | null) => {
@@ -134,6 +152,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name,
+        },
+        emailRedirectTo: `${window.location.origin}/`,
+      },
+    });
+    return { error };
+  };
+
+  const adminLogin = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Admin login error:', error);
+        return false;
+      }
+
+      // Check if user has admin role after login
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .eq('role', 'admin')
+        .single();
+
+      return !!roleData;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      return false;
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -147,6 +214,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const logout = signOut; // Alias for signOut
+
   const value = {
     user,
     profile,
@@ -155,7 +224,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAdmin,
     loading,
     refreshUserData,
-    signOut
+    signOut,
+    signIn,
+    signUp,
+    adminLogin,
+    logout
   };
 
   return (
