@@ -24,6 +24,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminUserAccounts from "./pages/AdminUserAccounts";
 import AdminBalances from "./pages/AdminBalances";
+import AdminSettings from "./pages/AdminSettings";
+import AdminActivity from "./pages/AdminActivity";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +57,8 @@ const App = () => (
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/user-accounts" element={<AdminUserAccounts />} />
               <Route path="/admin/balances" element={<AdminBalances />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/admin/activity" element={<AdminActivity />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

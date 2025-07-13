@@ -66,9 +66,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getSession = async () => {
       try {
-        setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
+        if (session?.user) {
+          setUser(session.user);
+          await refreshUserData(session.user);
+        }
       } catch (error) {
         console.error("Error getting session:", error);
       } finally {
@@ -78,37 +80,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await refreshUserData(session.user);
+      } else {
+        setProfile(null);
+        setCases([]);
+        setBalance(null);
+        setIsAdmin(false);
+      }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const setSession = (session: Session | null) => {
-    if (session) {
-      setUser(session.user);
-      refreshUserData();
-    } else {
-      setUser(null);
-      setProfile(null);
-      setCases([]);
-      setBalance(null);
-      setIsAdmin(false);
-    }
-  };
-
-  const refreshUserData = async () => {
-    if (!user) return;
+  const refreshUserData = async (currentUser?: User) => {
+    const userToUse = currentUser || user;
+    if (!userToUse) return;
 
     try {
-      console.log('Refreshing user data for:', user.id);
+      console.log('Refreshing user data for:', userToUse.id);
 
       // Fetch profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', userToUse.id)
         .single();
 
       if (profileData) {
@@ -119,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: casesData } = await supabase
         .from('cases')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userToUse.id)
         .order('created_at', { ascending: false });
 
       if (casesData) {
@@ -130,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: balanceData } = await supabase
         .from('balances')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userToUse.id)
         .single();
 
       if (balanceData) {
@@ -141,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', userToUse.id)
         .eq('role', 'admin')
         .single();
 
@@ -231,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     balance,
     isAdmin,
     loading,
-    refreshUserData,
+    refreshUserData: () => refreshUserData(),
     signOut,
     signIn,
     signUp,

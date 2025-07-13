@@ -49,6 +49,42 @@ export default function AdminDashboard() {
     }
   ];
 
+  const recentActivities = [
+    {
+      id: 1,
+      type: 'user_registration',
+      message: 'New user registration',
+      description: 'A new user has joined the platform',
+      icon: Users,
+      color: 'bg-blue-50',
+      iconColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      action: () => navigate('/admin/activity')
+    },
+    {
+      id: 2,
+      type: 'case_update',
+      message: 'Case status updated',
+      description: 'A case has been marked as completed',
+      icon: FileText,
+      color: 'bg-green-50',
+      iconColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      action: () => navigate('/admin/activity')
+    },
+    {
+      id: 3,
+      type: 'email_notification',
+      message: 'Email notification sent',
+      description: 'Status update email sent to user',
+      icon: Mail,
+      color: 'bg-yellow-50',
+      iconColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      action: () => navigate('/admin/activity')
+    }
+  ];
+
   return (
     <AdminLayout title="Admin Dashboard">
       <div className="space-y-8">
@@ -95,35 +131,21 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Users className="h-4 w-4 text-blue-600" />
+              {recentActivities.map((activity) => (
+                <div 
+                  key={activity.id} 
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:shadow-sm transition-shadow ${activity.color}`}
+                  onClick={activity.action}
+                >
+                  <div className={`p-2 rounded-full ${activity.iconColor}`}>
+                    <activity.icon className={`h-4 w-4 ${activity.textColor}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{activity.message}</p>
+                    <p className="text-xs text-gray-600">{activity.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">New user registration</p>
-                  <p className="text-xs text-gray-600">A new user has joined the platform</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                <div className="p-2 bg-green-100 rounded-full">
-                  <FileText className="h-4 w-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Case status updated</p>
-                  <p className="text-xs text-gray-600">A case has been marked as completed</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                <div className="p-2 bg-yellow-100 rounded-full">
-                  <Mail className="h-4 w-4 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Email notification sent</p>
-                  <p className="text-xs text-gray-600">Status update email sent to user</p>
-                </div>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
