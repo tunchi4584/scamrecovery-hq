@@ -84,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [balance, setBalance] = useState<Balance | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
   const { toast } = useToast();
 
   const signIn = async (email: string, password: string) => {
@@ -152,6 +153,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const fetchUserData = async (currentUser: User) => {
+    if (dataLoading) {
+      console.log('Data fetch already in progress, skipping...');
+      return;
+    }
+
+    setDataLoading(true);
     try {
       console.log('Fetching user data for:', currentUser.id);
 
@@ -165,6 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profileError) {
         console.error('Error fetching profile:', profileError);
       } else {
+        console.log('Profile fetched:', profileData);
         setProfile(profileData);
       }
 
@@ -178,10 +186,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (casesError) {
         console.error('Error fetching cases:', casesError);
       } else {
+        console.log('Cases fetched:', casesData?.length || 0);
         setCases(casesData || []);
       }
 
-      // Fetch balance - handle potential duplicates
+      // Fetch balance
       const { data: balanceData, error: balanceError } = await supabase
         .from('balances')
         .select('*')
@@ -193,6 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (balanceError) {
         console.error('Error fetching balance:', balanceError);
       } else {
+        console.log('Balance fetched:', balanceData);
         setBalance(balanceData);
       }
 
@@ -208,6 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('No admin role found (this is normal for regular users)');
         setIsAdmin(false);
       } else {
+        console.log('Admin role check:', !!roleData);
         setIsAdmin(!!roleData);
       }
 
@@ -218,6 +229,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Failed to load user data",
         variant: "destructive"
       });
+    } finally {
+      setDataLoading(false);
     }
   };
 
@@ -250,18 +263,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    console.log('AuthProvider initializing...');
+
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id || 'no user');
+        
+        if (!mounted) {
+          console.log('Component unmounted, ignoring auth state change');
+          return;
+        }
+
+        if (session?.user) {
+          console.log('Setting user from session:', session.user.id);
+          setUser(session.user);
+          
+          // Only fetch data on sign in, not on every token refresh
+          if (event === 'SIGNED_IN') {
+            console.log('User signed in, fetching data...');
+            await fetchUserData(session.user);
+          }
+        } else {
+          console.log('No session, clearing user data');
+          setUser(null);
+          setProfile(null);
+          setCases([]);
+          setBalance(null);
+          setIsAdmin(false);
+        }
+      }
+    );
 
     // Get initial session
-    const getInitialSession = async () => {
+    const initializeAuth = async () => {
       try {
         console.log('Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Error getting session:', error);
-          if (mounted) {
-            setLoading(false);
-          }
           return;
         }
 
@@ -273,48 +314,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('No initial session found');
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        console.error('Error in initializeAuth:', error);
       } finally {
         if (mounted) {
+          console.log('Setting loading to false');
           setLoading(false);
         }
       }
     };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id || 'no user');
-        
-        if (!mounted) return;
-
-        if (session?.user) {
-          setUser(session.user);
-          // Fetch data for new user sessions, but avoid duplicate fetches
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            await fetchUserData(session.user);
-          }
-        } else {
-          console.log('No session, clearing user data');
-          setUser(null);
-          setProfile(null);
-          setCases([]);
-          setBalance(null);
-          setIsAdmin(false);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Initialize
-    getInitialSession();
+    // Initialize auth
+    initializeAuth();
 
     return () => {
+      console.log('AuthProvider cleanup');
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Empty dependency array is correct here
+  }, []); // Empty dependency array is correct
+
+  // Separate timeout to ensure loading is set to false even if initialization fails
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      console.log('Failsafe: Setting loading to false after 5 seconds');
+      setLoading(false);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   return (
     <AuthContext.Provider
