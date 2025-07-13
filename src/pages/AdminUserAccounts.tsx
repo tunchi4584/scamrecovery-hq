@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +22,7 @@ import {
   Save,
   X
 } from 'lucide-react';
+import { CaseSearchModal } from '@/components/admin/CaseSearchModal';
 
 interface UserProfile {
   id: string;
@@ -274,7 +274,7 @@ export default function AdminUserAccounts() {
   return (
     <AdminLayout title="User Account Management">
       {/* Search Bar */}
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -284,6 +284,7 @@ export default function AdminUserAccounts() {
             className="pl-10"
           />
         </div>
+        <CaseSearchModal />
       </div>
 
       {/* User Accounts Grid */}

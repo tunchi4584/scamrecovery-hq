@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { supabase } from "../_shared/supabase.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,62 +8,63 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { caseId, newStatus, notes, recoveredAmount } = await req.json();
+    console.log('Case status updater triggered');
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Listen for PostgreSQL notifications
+    const channel = supabase.channel('case_status_updates');
+    
+    channel.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'cases'
+    }, async (payload) => {
+      console.log('Case update received:', payload);
+      
+      if (payload.eventType === 'UPDATE') {
+        const caseData = payload.new;
+        
+        // Get user profile information
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name, email')
+          .eq('id', caseData.user_id)
+          .single();
 
-    // Update case status
-    const updateData: any = {
-      status: newStatus,
-      updated_at: new Date().toISOString()
-    };
+        if (profile) {
+          // Send email notification
+          const notificationData = {
+            type: 'submission_update',
+            email: profile.email,
+            userName: profile.name,
+            caseTitle: caseData.title,
+            amount: caseData.amount,
+            status: caseData.status,
+            message: `Your case "${caseData.title}" status has been updated to: ${caseData.status.replace('_', ' ').toUpperCase()}`
+          };
 
-    // If amount is recovered, update the amount field
-    if (recoveredAmount !== undefined && recoveredAmount > 0) {
-      updateData.amount = recoveredAmount;
-    }
+          console.log('Sending email notification:', notificationData);
 
-    const { data: updatedCase, error } = await supabase
-      .from('cases')
-      .update(updateData)
-      .eq('id', caseId)
-      .select()
-      .single();
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-admin-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            },
+            body: JSON.stringify(notificationData)
+          });
+        }
+      }
+    });
 
-    if (error) {
-      throw new Error(`Failed to update case: ${error.message}`);
-    }
-
-    // Log the status change
-    console.log(`Case ${caseId} status updated to ${newStatus}`);
-    if (notes) {
-      console.log(`Notes: ${notes}`);
-    }
-    if (recoveredAmount) {
-      console.log(`Recovery amount: $${recoveredAmount}`);
-    }
-
-    // If case is resolved, you could trigger additional actions here
-    if (newStatus === 'resolved') {
-      // Could send notification email, update user balance, etc.
-      console.log(`Case ${caseId} has been resolved with recovery of $${recoveredAmount || 0}`);
-    }
+    channel.subscribe();
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        case: updatedCase,
-        message: `Case status updated to ${newStatus}`
-      }),
+      JSON.stringify({ message: 'Case status updater is running' }),
       { 
         headers: { 
           ...corsHeaders, 
@@ -73,13 +74,10 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error updating case status:', error);
+    console.error('Error in case status updater:', error);
     
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
+      JSON.stringify({ error: error.message }),
       { 
         status: 500,
         headers: { 

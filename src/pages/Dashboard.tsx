@@ -9,6 +9,9 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CaseDetailsModal } from '@/components/CaseDetailsModal';
+import { CreateCaseModal } from '@/components/CreateCaseModal';
+import { UserBalanceCard } from '@/components/UserBalanceCard';
+import { CaseDetailsView } from '@/components/CaseDetailsView';
 import { 
   DollarSign, 
   Clock, 
@@ -18,13 +21,17 @@ import {
   CheckCircle,
   Activity,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from 'lucide-react';
 
+type ViewType = 'dashboard' | 'all_cases' | 'pending_cases' | 'in_progress_cases' | 'completed_cases';
+
 export default function Dashboard() {
-  const { user, cases, profile, refreshUserData, loading } = useAuth();
+  const { user, cases, profile, balance, refreshUserData, loading } = useAuth();
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -50,7 +57,6 @@ export default function Dashboard() {
         },
         (payload) => {
           console.log('Real-time case update received:', payload);
-          // Refresh user data when cases are updated
           refreshUserData();
         }
       )
@@ -59,12 +65,11 @@ export default function Dashboard() {
         {
           event: '*',
           schema: 'public',
-          table: 'submissions',
+          table: 'balances',
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time submission update received:', payload);
-          // Refresh user data when submissions are updated
+          console.log('Real-time balance update received:', payload);
           refreshUserData();
         }
       )
@@ -140,6 +145,7 @@ export default function Dashboard() {
   const totalAmount = cases.reduce((sum, case_) => sum + Number(case_.amount), 0);
   const completedCases = cases.filter(case_ => case_.status === 'complete' || case_.status === 'resolved').length;
   const inProgressCases = cases.filter(case_ => case_.status === 'in_progress').length;
+  const pendingCases = cases.filter(case_ => case_.status === 'pending').length;
 
   if (loading) {
     return (
@@ -161,6 +167,31 @@ export default function Dashboard() {
     return null;
   }
 
+  // Render case details view if not on dashboard
+  if (currentView !== 'dashboard') {
+    const filterMap = {
+      'all_cases': 'all',
+      'pending_cases': 'pending',
+      'in_progress_cases': 'in_progress',
+      'completed_cases': 'completed'
+    } as const;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <Header />
+        <div className="py-20">
+          <div className="max-w-7xl mx-auto px-4">
+            <CaseDetailsView 
+              filter={filterMap[currentView]} 
+              onBack={() => setCurrentView('dashboard')}
+            />
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Header />
@@ -176,19 +207,31 @@ export default function Dashboard() {
               <p className="text-xl text-gray-600">Track your recovery cases and progress</p>
             </div>
             
-            <Button 
-              onClick={handleRefresh} 
-              disabled={refreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
+            <div className="flex items-center gap-3">
+              <CreateCaseModal />
+              <Button 
+                onClick={handleRefresh} 
+                disabled={refreshing}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Account Balance Section */}
+          <div className="mb-8">
+            <UserBalanceCard />
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              onClick={() => setCurrentView('all_cases')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -202,21 +245,27 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              onClick={() => setCurrentView('pending_cases')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <DollarSign className="h-8 w-8 text-green-600" />
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Clock className="h-8 w-8 text-yellow-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Amount</p>
-                    <p className="text-2xl font-bold text-gray-900">${totalAmount.toLocaleString()}</p>
+                    <p className="text-sm font-medium text-gray-600">Pending Cases</p>
+                    <p className="text-2xl font-bold text-gray-900">{pendingCases}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              onClick={() => setCurrentView('in_progress_cases')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-purple-100 rounded-lg">
@@ -230,7 +279,10 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              onClick={() => setCurrentView('completed_cases')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-emerald-100 rounded-lg">
@@ -245,35 +297,44 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Cases List */}
+          {/* Recent Cases List */}
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <FileText className="h-6 w-6 text-blue-600" />
-                Your Recovery Cases
-              </CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                  Recent Cases
+                </CardTitle>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setCurrentView('all_cases')}
+                  className="flex items-center gap-2"
+                >
+                  View All Cases
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {cases.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No cases found</h3>
-                  <p className="text-gray-600 mb-6">You haven't submitted any recovery cases yet.</p>
-                  <Button onClick={() => navigate('/contact')} className="bg-blue-600 hover:bg-blue-700">
-                    Submit Your First Case
-                  </Button>
+                  <p className="text-gray-600 mb-6">Create your first recovery case to get started.</p>
+                  <CreateCaseModal />
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {cases.map((case_) => (
+                  {cases.slice(0, 3).map((case_) => (
                     <div key={case_.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
                       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            {getStatusIcon(case_.status)}
                             <h3 className="text-lg font-semibold text-gray-900">{case_.title}</h3>
-                            <Badge className={`${getStatusColor(case_.status)} font-medium`}>
-                              {getStatusLabel(case_.status)}
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {case_.case_number || 'Generating...'}
+                            </Badge>
+                            <Badge className={`bg-yellow-100 text-yellow-800 border-yellow-200 font-medium`}>
+                              {case_.status.charAt(0).toUpperCase() + case_.status.slice(1).replace('_', ' ')}
                             </Badge>
                           </div>
                           
@@ -292,9 +353,9 @@ export default function Dashboard() {
                           <div className="mt-4">
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-sm font-medium text-gray-700">Progress</span>
-                              <span className="text-sm text-gray-600">{getProgressPercentage(case_.status)}%</span>
+                              <span className="text-sm text-gray-600">20%</span>
                             </div>
-                            <Progress value={getProgressPercentage(case_.status)} className="h-2" />
+                            <Progress value={20} className="h-2" />
                           </div>
                         </div>
 

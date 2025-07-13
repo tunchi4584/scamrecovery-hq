@@ -18,27 +18,36 @@ export type Database = {
         Row: {
           amount_lost: number
           amount_recovered: number
+          completed_cases: number | null
           created_at: string
           id: string
+          pending_cases: number | null
           recovery_notes: string | null
+          total_cases: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           amount_lost?: number
           amount_recovered?: number
+          completed_cases?: number | null
           created_at?: string
           id?: string
+          pending_cases?: number | null
           recovery_notes?: string | null
+          total_cases?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           amount_lost?: number
           amount_recovered?: number
+          completed_cases?: number | null
           created_at?: string
           id?: string
+          pending_cases?: number | null
           recovery_notes?: string | null
+          total_cases?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -55,8 +64,12 @@ export type Database = {
       cases: {
         Row: {
           amount: number
+          case_number: string | null
           created_at: string
+          description: string | null
+          evidence: string | null
           id: string
+          scam_type: string | null
           status: string
           submission_id: string | null
           title: string
@@ -65,8 +78,12 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          case_number?: string | null
           created_at?: string
+          description?: string | null
+          evidence?: string | null
           id?: string
+          scam_type?: string | null
           status?: string
           submission_id?: string | null
           title: string
@@ -75,8 +92,12 @@ export type Database = {
         }
         Update: {
           amount?: number
+          case_number?: string | null
           created_at?: string
+          description?: string | null
+          evidence?: string | null
           id?: string
+          scam_type?: string | null
           status?: string
           submission_id?: string | null
           title?: string
@@ -209,12 +230,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_case_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_role: {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      update_user_balance_stats: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
