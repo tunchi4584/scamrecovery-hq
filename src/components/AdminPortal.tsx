@@ -1,10 +1,10 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -16,7 +16,11 @@ import {
   User,
   Mail,
   Phone,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  FileText,
+  Image,
+  Download
 } from 'lucide-react';
 
 interface AdminCase {
@@ -28,6 +32,9 @@ interface AdminCase {
   created_at: string;
   updated_at: string;
   submission_id?: string | null;
+  description?: string;
+  evidence?: string;
+  scam_type?: string;
 }
 
 interface AdminUser {
@@ -42,6 +49,82 @@ interface AdminUser {
 interface AdminPortalProps {
   users: AdminUser[];
   onRefresh: () => void;
+}
+
+function EvidenceViewer({ evidence }: { evidence: string }) {
+  const evidenceParts = evidence.split('\n\n---\n\n');
+  const textEvidence = evidenceParts.find(part => !part.startsWith('http')) || '';
+  const fileUrls = evidenceParts.filter(part => part.startsWith('http'));
+
+  return (
+    <div className="space-y-4">
+      {textEvidence && (
+        <div>
+          <h4 className="font-medium text-gray-900 mb-2">Text Evidence:</h4>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{textEvidence}</p>
+          </div>
+        </div>
+      )}
+
+      {fileUrls.length > 0 && (
+        <div>
+          <h4 className="font-medium text-gray-900 mb-2">Uploaded Files:</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {fileUrls.map((url, index) => {
+              const fileName = url.split('/').pop()?.split('-').slice(1).join('-') || `File ${index + 1}`;
+              const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+              
+              return (
+                <div key={index} className="border rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    {isImage ? (
+                      <Image className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-gray-600" />
+                    )}
+                    <span className="text-sm font-medium truncate">{fileName}</span>
+                  </div>
+                  
+                  {isImage && (
+                    <img 
+                      src={url} 
+                      alt={fileName}
+                      className="w-full h-32 object-cover rounded mb-2"
+                    />
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(url, '_blank')}
+                      className="flex-1"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = fileName;
+                        link.click();
+                      }}
+                    >
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function AdminPortal({ users, onRefresh }: AdminPortalProps) {
@@ -188,9 +271,13 @@ export function AdminPortal({ users, onRefresh }: AdminPortalProps) {
                             {getStatusLabel(caseItem.status)}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          Created: {new Date(caseItem.created_at).toLocaleDateString()}
-                        </p>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>Created: {new Date(caseItem.created_at).toLocaleDateString()}</p>
+                          {caseItem.scam_type && <p>Type: {caseItem.scam_type}</p>}
+                          {caseItem.description && (
+                            <p className="line-clamp-2">Description: {caseItem.description}</p>
+                          )}
+                        </div>
                       </div>
                       
                       {editingCase === caseItem.id ? (
@@ -248,15 +335,32 @@ export function AdminPortal({ users, onRefresh }: AdminPortalProps) {
                             </div>
                             <div className="text-sm text-gray-500">Case Amount</div>
                           </div>
-                          <Button
-                            size="sm"
-                            onClick={() => startEditing(caseItem)}
-                            variant="outline"
-                            className="w-full sm:w-auto"
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
+                          <div className="flex gap-2">
+                            {caseItem.evidence && (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button size="sm" variant="outline">
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Evidence
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                                  <DialogHeader>
+                                    <DialogTitle>Case Evidence: {caseItem.title}</DialogTitle>
+                                  </DialogHeader>
+                                  <EvidenceViewer evidence={caseItem.evidence} />
+                                </DialogContent>
+                              </Dialog>
+                            )}
+                            <Button
+                              size="sm"
+                              onClick={() => startEditing(caseItem)}
+                              variant="outline"
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
