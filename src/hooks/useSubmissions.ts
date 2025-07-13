@@ -59,7 +59,7 @@ export function useSubmissions() {
   const updateSubmission = useCallback(async (
     submissionId: string, 
     updates: { status?: string; internal_notes?: string }
-  ) => {
+  ): Promise<void> => {
     try {
       console.log('Updating submission:', submissionId, updates);
 
@@ -96,8 +96,6 @@ export function useSubmissions() {
         title: "Success",
         description: "Submission updated successfully",
       });
-
-      return updatedSubmission;
     } catch (err: any) {
       console.error('Error updating submission:', err);
       toast({
@@ -148,7 +146,7 @@ export function useSubmissions() {
     }
   }, []);
 
-  const deleteSubmission = useCallback(async (submissionId: string) => {
+  const deleteSubmission = useCallback(async (submissionId: string): Promise<void> => {
     try {
       const { error: deleteError } = await supabase
         .from('submissions')
@@ -184,7 +182,7 @@ export function useSubmissions() {
     caseTitle: string,
     amount: number,
     notes?: string
-  ) => {
+  ): Promise<void> => {
     try {
       console.log('Sending email notification to:', email);
 
