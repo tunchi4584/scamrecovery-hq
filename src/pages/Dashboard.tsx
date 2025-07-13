@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { CaseModal } from '@/components/CaseModal';
+import { CreateCaseForm } from '@/components/CreateCaseForm';
 import { 
   FileText, 
   DollarSign, 
@@ -72,7 +72,7 @@ export default function Dashboard() {
                 Manage your recovery cases and track progress
               </p>
             </div>
-            <CaseModal />
+            <CreateCaseForm />
           </div>
         </div>
 
@@ -173,7 +173,7 @@ export default function Dashboard() {
                 <p className="text-gray-500 mb-4">
                   Create your first recovery case to get started
                 </p>
-                <CaseModal />
+                <CreateCaseForm />
               </div>
             )}
           </CardContent>
