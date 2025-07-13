@@ -95,66 +95,14 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      toast({
-        title: "Create Free Account",
-        description: "Sign up for free to submit your case for review.",
-        variant: "default"
-      });
-      navigate('/register');
-      return;
-    }
-    
     setLoading(true);
 
     try {
-      // Prepare evidence with file information
-      let evidenceText = formData.evidence;
-      if (uploadedFiles.length > 0) {
-        const fileList = uploadedFiles.map(file => `${file.name} (${(file.size / 1024).toFixed(1)}KB)`).join(', ');
-        evidenceText += `\n\nAttached files: ${fileList}`;
-      }
-
-      // Create submission
-      const { data: submission, error: submissionError } = await supabase
-        .from('submissions')
-        .insert({
-          user_id: user.id,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          scam_type: formData.scamType,
-          amount_lost: parseFloat(formData.amountLost) || 0,
-          description: formData.description,
-          evidence: evidenceText
-        })
-        .select()
-        .single();
-
-      if (submissionError) throw submissionError;
-
-      // Create corresponding case with case_number
-      const caseNumber = 'CASE-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
-      const { error: caseError } = await supabase
-        .from('cases')
-        .insert({
-          user_id: user.id,
-          submission_id: submission.id,
-          title: `${formData.scamType} Case`,
-          status: 'pending',
-          amount: parseFloat(formData.amountLost) || 0,
-          case_number: caseNumber
-        });
-
-      if (caseError) throw caseError;
-
+      // Just show a thank you message for contact form submission
       toast({
-        title: "Free Case Review Submitted!",
-        description: "Your case has been submitted for free review. We'll contact you within 24 hours.",
+        title: "Message Sent!",
+        description: "Thank you for contacting us. We'll get back to you soon.",
       });
-
-      // Refresh user data to show the new case
-      await refreshUserData();
       
       // Reset form
       setFormData({
@@ -168,13 +116,11 @@ export default function Contact() {
       });
       setUploadedFiles([]);
 
-      // Redirect to dashboard
-      navigate('/dashboard');
     } catch (error: any) {
-      console.error('Error submitting case:', error);
+      console.error('Error submitting form:', error);
       toast({
-        title: "Submission Failed",
-        description: error.message || "Failed to submit your case. Please try again.",
+        title: "Message Failed",
+        description: "Failed to send your message. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -193,14 +139,13 @@ export default function Contact() {
               <Gift className="h-16 w-16 text-green-600" />
               <AlertTriangle className="h-16 w-16 text-red-600" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">FREE Case Review & Recovery</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
-              Submit your case details for a <span className="text-green-600 font-bold">completely free</span> initial review. 
-              Our expert team will evaluate your case and provide guidance at no cost.
+              Get in touch with our expert team for any questions or inquiries.
             </p>
-            <div className="bg-green-100 border border-green-300 rounded-lg p-4 max-w-2xl mx-auto">
-              <p className="text-green-800 font-semibold">
-                ✅ No upfront fees • ✅ Free consultation • ✅ Expert analysis • ✅ 24-hour response
+            <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 max-w-2xl mx-auto">
+              <p className="text-blue-800 font-semibold">
+                ✅ Expert consultation • ✅ Professional guidance • ✅ Quick response
               </p>
             </div>
           </div>
@@ -212,7 +157,7 @@ export default function Contact() {
                 <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-t-lg">
                   <CardTitle className="text-2xl flex items-center">
                     <FileText className="h-6 w-6 mr-2" />
-                    Submit Your Case for FREE Review
+                    Submit Your Contact Form
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-8">
@@ -378,26 +323,16 @@ export default function Contact() {
                       {loading ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Submitting for FREE Review...
+                          Sending Message...
                         </>
                       ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
-                          Submit for FREE Case Review
+                          Send Message
                         </>
                       )}
                     </Button>
 
-                    {!user && (
-                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-green-800 text-sm">
-                          <strong>Create a free account to submit your case.</strong> No payment required! 
-                          <Button variant="link" className="p-0 h-auto text-green-600 ml-1" onClick={() => navigate('/register')}>
-                            Sign up here for free
-                          </Button>
-                        </p>
-                      </div>
-                    )}
                   </form>
                 </CardContent>
               </Card>

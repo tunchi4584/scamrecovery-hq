@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { NewCaseDialog } from '@/components/NewCaseDialog';
+
 import { 
   FileText, 
   DollarSign, 
@@ -72,7 +72,6 @@ export default function Dashboard() {
                 Manage your recovery cases and track progress
               </p>
             </div>
-            <NewCaseDialog />
           </div>
         </div>
 
@@ -170,10 +169,9 @@ export default function Dashboard() {
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No cases yet</h3>
-                <p className="text-gray-500 mb-4">
-                  Create your first recovery case to get started
+                <p className="text-gray-500">
+                  Your recovery cases will appear here when available
                 </p>
-                <NewCaseDialog />
               </div>
             )}
           </CardContent>
