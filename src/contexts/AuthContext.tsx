@@ -1,116 +1,129 @@
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-interface UserProfile {
+interface Profile {
   id: string;
-  name: string;
   email: string;
+  name: string;
   is_active: boolean;
   created_at: string;
+  updated_at: string;
 }
 
-export interface UserCase {
+interface Case {
   id: string;
+  user_id: string;
   title: string;
-  amount: number;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  case_number: string | null;
   description: string | null;
   scam_type: string | null;
+  amount: number;
   evidence: string | null;
-  submission_id: string | null;
+  status: string;
+  case_number: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-// Export Case as alias for UserCase for backward compatibility
-export type Case = UserCase;
-
-interface UserBalance {
+interface Balance {
   id: string;
+  user_id: string;
   amount_lost: number;
   amount_recovered: number;
+  total_cases: number | null;
+  completed_cases: number | null;
+  pending_cases: number | null;
   recovery_notes: string | null;
-  total_cases: number;
-  completed_cases: number;
-  pending_cases: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  profile: UserProfile | null;
-  cases: UserCase[];
-  balance: UserBalance | null;
-  isAdmin: boolean;
+  profile: Profile | null;
+  cases: Case[];
+  balance: Balance | null;
   loading: boolean;
+  isAdmin: boolean;
   refreshUserData: () => Promise<void>;
   signOut: () => Promise<void>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
-  adminLogin: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  profile: null,
+  cases: [],
+  balance: null,
+  loading: true,
+  isAdmin: false,
+  refreshUserData: async () => {},
+  signOut: async () => {},
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [cases, setCases] = useState<UserCase[]>([]);
-  const [balance, setBalance] = useState<UserBalance | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [cases, setCases] = useState<Case[]>([]);
+  const [balance, setBalance] = useState<Balance | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const { toast } = useToast();
 
-  const refreshUserData = async (currentUser?: User) => {
-    const userToUse = currentUser || user;
-    if (!userToUse || refreshing) {
-      console.log('No user to refresh data for or already refreshing');
-      return;
-    }
-
-    setRefreshing(true);
+  const fetchUserData = async (currentUser: User) => {
     try {
-      console.log('Refreshing user data for:', userToUse.id);
+      console.log('Refreshing user data for:', currentUser.id);
 
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userToUse.id)
-        .single();
+        .eq('id', currentUser.id)
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-      } else if (profileData) {
-        setProfile(profileData);
+        throw profileError;
       }
+
+      setProfile(profileData);
 
       // Fetch cases
       const { data: casesData, error: casesError } = await supabase
         .from('cases')
         .select('*')
-        .eq('user_id', userToUse.id)
+        .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
 
       if (casesError) {
         console.error('Error fetching cases:', casesError);
-      } else if (casesData) {
-        setCases(casesData || []);
+        throw casesError;
       }
 
-      // Fetch balance
+      setCases(casesData || []);
+
+      // Fetch balance - handle potential duplicates
       const { data: balanceData, error: balanceError } = await supabase
         .from('balances')
         .select('*')
-        .eq('user_id', userToUse.id)
-        .single();
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (balanceError) {
         console.error('Error fetching balance:', balanceError);
-      } else if (balanceData) {
+        // Don't throw error for balance, create one if needed
+      } else {
         setBalance(balanceData);
       }
 
@@ -118,9 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userToUse.id)
+        .eq('user_id', currentUser.id)
         .eq('role', 'admin')
-        .single();
+        .maybeSingle();
 
       if (roleError) {
         console.log('No admin role found (this is normal for regular users)');
@@ -130,167 +143,107 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
     } catch (error) {
-      console.error('Error refreshing user data:', error);
-    } finally {
-      setRefreshing(false);
+      console.error('Error fetching user data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load user data",
+        variant: "destructive"
+      });
     }
   };
 
-  useEffect(() => {
-    let mounted = true;
-
-    const getSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-          return;
-        }
-        
-        if (mounted) {
-          if (session?.user) {
-            setUser(session.user);
-            await refreshUserData(session.user);
-          }
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      
-      if (mounted) {
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to avoid blocking the auth state change
-          setTimeout(() => {
-            if (mounted) {
-              refreshUserData(session.user);
-            }
-          }, 0);
-        } else {
-          setProfile(null);
-          setCases([]);
-          setBalance(null);
-          setIsAdmin(false);
-        }
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []); // Remove refreshUserData from dependencies to prevent loops
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
-  };
-
-  const signUp = async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name,
-        },
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    });
-    return { error };
-  };
-
-  const adminLogin = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Admin login error:', error);
-        return false;
-      }
-
-      if (!data.user) {
-        console.error('No user data after login');
-        return false;
-      }
-
-      // Check if user has admin role after login
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', data.user.id)
-        .eq('role', 'admin')
-        .single();
-
-      const hasAdminRole = !!roleData;
-      console.log('Admin role check result:', hasAdminRole);
-      
-      return hasAdminRole;
-    } catch (error) {
-      console.error('Admin login error:', error);
-      return false;
+  const refreshUserData = async () => {
+    if (user) {
+      await fetchUserData(user);
     }
   };
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Clear all state
       setUser(null);
       setProfile(null);
       setCases([]);
       setBalance(null);
       setIsAdmin(false);
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive"
+      });
     }
   };
 
-  const logout = signOut; // Alias for signOut
+  useEffect(() => {
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setLoading(false);
+          return;
+        }
 
-  const value = {
-    user,
-    profile,
-    cases,
-    balance,
-    isAdmin,
-    loading,
-    refreshUserData: () => refreshUserData(),
-    signOut,
-    signIn,
-    signUp,
-    adminLogin,
-    logout
-  };
+        if (session?.user) {
+          console.log('Auth state changed: INITIAL_SESSION', session.user.id);
+          setUser(session.user);
+          await fetchUserData(session.user);
+        }
+      } catch (error) {
+        console.error('Error in getInitialSession:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id || 'no user');
+        
+        if (session?.user) {
+          setUser(session.user);
+          await fetchUserData(session.user);
+        } else {
+          setUser(null);
+          setProfile(null);
+          setCases([]);
+          setBalance(null);
+          setIsAdmin(false);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        cases,
+        balance,
+        loading,
+        isAdmin,
+        refreshUserData,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
+};
