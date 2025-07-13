@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard, 
   Users, 
-  FileText, 
+  UserCog, 
   DollarSign, 
   Settings,
   LogOut,
@@ -24,7 +24,7 @@ interface AdminLayoutProps {
 const navigationItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'User Management', href: '/admin/users', icon: Users },
-  { name: 'Submissions', href: '/admin/submissions', icon: FileText },
+  { name: 'User Accounts', href: '/admin/user-accounts', icon: UserCog },
   { name: 'Balance Tracker', href: '/admin/balances', icon: DollarSign },
 ];
 

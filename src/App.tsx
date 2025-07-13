@@ -22,7 +22,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
-import AdminSubmissions from "./pages/AdminSubmissions";
+import AdminUserAccounts from "./pages/AdminUserAccounts";
 import AdminBalances from "./pages/AdminBalances";
 import NotFound from "./pages/NotFound";
 
@@ -53,7 +53,7 @@ const App = () => (
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/submissions" element={<AdminSubmissions />} />
+              <Route path="/admin/user-accounts" element={<AdminUserAccounts />} />
               <Route path="/admin/balances" element={<AdminBalances />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
