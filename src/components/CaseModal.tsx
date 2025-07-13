@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 const SCAM_TYPES = [
   'Investment Scam',
-  'Romance Scam',
+  'Romance Scam', 
   'Phishing',
   'Identity Theft',
   'Cryptocurrency Scam',
@@ -22,9 +22,9 @@ const SCAM_TYPES = [
   'Other'
 ];
 
-export function CreateCaseModal() {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+export function CaseModal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [scamType, setScamType] = useState('');
@@ -42,30 +42,38 @@ export function CreateCaseModal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a case",
+        variant: "destructive"
+      });
+      return;
+    }
 
+    if (!title.trim() || !description.trim() || !scamType || !amount) {
+      toast({
+        title: "Validation Error",
+        description: "All fields are required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount greater than 0",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
     try {
-      // Basic validation
-      if (!title.trim() || !description.trim() || !scamType || !amount) {
-        toast({
-          title: "Missing Information",
-          description: "Please fill in all required fields",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const amountNum = parseFloat(amount);
-      if (isNaN(amountNum) || amountNum <= 0) {
-        toast({
-          title: "Invalid Amount",
-          description: "Please enter a valid amount",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Create the case
       const { error } = await supabase
         .from('cases')
         .insert({
@@ -78,63 +86,61 @@ export function CreateCaseModal() {
         });
 
       if (error) {
-        console.error('Case creation error:', error);
+        console.error('Database error:', error);
         throw error;
       }
 
       toast({
-        title: "Case Created",
-        description: "Your recovery case has been submitted successfully"
+        title: "Success",
+        description: "Case created successfully"
       });
 
-      // Reset and close
       resetForm();
-      setOpen(false);
+      setIsOpen(false);
       
-      // Refresh data
-      refreshUserData();
+      // Refresh user data to show new case
+      await refreshUserData();
 
     } catch (error: any) {
-      console.error('Error creating case:', error);
+      console.error('Case creation failed:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create case",
+        description: error.message || "Failed to create case. Please try again.",
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
           Create New Case
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create New Recovery Case</DialogTitle>
+          <DialogTitle>Create Recovery Case</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Case Title *</Label>
+          <div>
+            <Label htmlFor="case-title">Case Title *</Label>
             <Input
-              id="title"
+              id="case-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter case title"
-              disabled={loading}
+              placeholder="Brief title for your case"
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="scam-type">Scam Type *</Label>
-            <Select value={scamType} onValueChange={setScamType} disabled={loading}>
+          <div>
+            <Label htmlFor="case-type">Scam Type *</Label>
+            <Select value={scamType} onValueChange={setScamType} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select scam type" />
               </SelectTrigger>
@@ -148,46 +154,46 @@ export function CreateCaseModal() {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount Lost (USD) *</Label>
+          <div>
+            <Label htmlFor="case-amount">Amount Lost (USD) *</Label>
             <Input
-              id="amount"
+              id="case-amount"
               type="number"
               step="0.01"
-              min="0"
+              min="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              disabled={loading}
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+          <div>
+            <Label htmlFor="case-description">Description *</Label>
             <Textarea
-              id="description"
+              id="case-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what happened..."
-              className="min-h-[100px]"
-              disabled={loading}
+              placeholder="Describe what happened in detail..."
+              rows={4}
               required
             />
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
+              onClick={() => setIsOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? 'Creating...' : 'Create Case'}
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Create Case'}
             </Button>
           </div>
         </form>
