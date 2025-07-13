@@ -64,9 +64,11 @@ export function NewCaseDialog() {
     }
 
     setLoading(true);
+    console.log('Starting case creation...');
     
     try {
-      const { error } = await supabase
+      // Step 1: Insert the case
+      const { data: caseData, error: caseError } = await supabase
         .from('cases')
         .insert({
           user_id: user.id,
@@ -75,11 +77,56 @@ export function NewCaseDialog() {
           scam_type: scamType,
           amount: amountValue,
           status: 'pending'
-        });
+        })
+        .select('*')
+        .single();
 
-      if (error) {
-        throw error;
+      if (caseError) {
+        console.error('Case insert error:', caseError);
+        throw caseError;
       }
+
+      console.log('Case created:', caseData);
+
+      // Step 2: Update balance stats manually (no triggers)
+      const { data: existingBalance } = await supabase
+        .from('balances')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingBalance) {
+        const { error: updateError } = await supabase
+          .from('balances')
+          .update({
+            amount_lost: (existingBalance.amount_lost || 0) + amountValue,
+            total_cases: (existingBalance.total_cases || 0) + 1,
+            pending_cases: (existingBalance.pending_cases || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          console.error('Balance update error:', updateError);
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from('balances')
+          .insert({
+            user_id: user.id,
+            amount_lost: amountValue,
+            amount_recovered: 0,
+            total_cases: 1,
+            pending_cases: 1,
+            completed_cases: 0
+          });
+
+        if (insertError) {
+          console.error('Balance insert error:', insertError);
+        }
+      }
+
+      console.log('Balance updated successfully');
 
       toast({
         title: "Success",
@@ -95,6 +142,7 @@ export function NewCaseDialog() {
       
       // Refresh data
       await refreshUserData();
+      console.log('Data refreshed');
 
     } catch (error: any) {
       console.error('Error creating case:', error);
@@ -105,6 +153,7 @@ export function NewCaseDialog() {
       });
     } finally {
       setLoading(false);
+      console.log('Case creation completed');
     }
   };
 
