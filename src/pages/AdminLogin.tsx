@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,17 +15,8 @@ export default function AdminLogin() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-  const { adminLogin, isAdmin, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // Redirect if already logged in as admin
-  useEffect(() => {
-    if (!authLoading && user && isAdmin) {
-      console.log('User is already admin, redirecting to dashboard');
-      navigate('/admin/dashboard', { replace: true });
-    }
-  }, [user, isAdmin, navigate, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,28 +34,43 @@ export default function AdminLogin() {
 
     try {
       console.log('Attempting admin login for:', email);
-      const success = await adminLogin(email, password);
       
-      if (success) {
-        console.log('Admin login successful, navigating to dashboard');
-        toast({
-          title: "Admin Login Successful",
-          description: "Welcome to the admin portal.",
-        });
-        navigate('/admin/dashboard', { replace: true });
-      } else {
-        console.log('Admin login failed');
-        toast({
-          title: "Access Denied",
-          description: "Invalid credentials or insufficient permissions.",
-          variant: "destructive"
-        });
+      // Direct authentication without using AuthContext
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError || !authData.user) {
+        throw new Error('Invalid credentials');
       }
-    } catch (error) {
+
+      // Check if user has admin role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (roleError || !roleData) {
+        // Sign out if not admin
+        await supabase.auth.signOut();
+        throw new Error('Access denied: Admin privileges required');
+      }
+
+      console.log('Admin login successful, navigating to dashboard');
+      toast({
+        title: "Admin Login Successful",
+        description: "Welcome to the admin portal.",
+      });
+      navigate('/admin/dashboard', { replace: true });
+      
+    } catch (error: any) {
       console.error('Admin login error:', error);
       toast({
-        title: "Login Error",
-        description: "An error occurred. Please try again.",
+        title: "Access Denied",
+        description: error.message || "Invalid credentials or insufficient permissions.",
         variant: "destructive"
       });
     } finally {
@@ -114,17 +119,6 @@ export default function AdminLogin() {
     }
   };
 
-  // Show loading while auth is loading
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-8 w-8 animate-spin text-white" />
-          <span className="text-white text-lg">Loading...</span>
-        </div>
-      </div>
-    );
-  }
 
   if (showForgotPassword) {
     return (
