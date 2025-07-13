@@ -133,7 +133,8 @@ export default function Contact() {
 
       if (submissionError) throw submissionError;
 
-      // Create corresponding case
+      // Create corresponding case with case_number
+      const caseNumber = 'CASE-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
       const { error: caseError } = await supabase
         .from('cases')
         .insert({
@@ -141,7 +142,8 @@ export default function Contact() {
           submission_id: submission.id,
           title: `${formData.scamType} Case`,
           status: 'pending',
-          amount: parseFloat(formData.amountLost) || 0
+          amount: parseFloat(formData.amountLost) || 0,
+          case_number: caseNumber
         });
 
       if (caseError) throw caseError;

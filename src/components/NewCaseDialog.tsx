@@ -64,73 +64,34 @@ export function NewCaseDialog() {
     }
 
     setLoading(true);
-    console.log('Starting case creation...');
+    console.log('Starting atomic case creation...');
     
     try {
-      // Step 1: Insert the case
-      const { data: caseData, error: caseError } = await supabase
-        .from('cases')
-        .insert({
-          user_id: user.id,
-          title: title.trim(),
-          description: description.trim(),
-          scam_type: scamType,
-          amount: amountValue,
-          status: 'pending'
-        })
-        .select('*')
-        .single();
+      // Use the atomic database function that handles both case creation and balance updates
+      const { data, error } = await supabase.rpc('create_case_atomic', {
+        p_user_id: user.id,
+        p_title: title.trim(),
+        p_description: description.trim() || null,
+        p_scam_type: scamType,
+        p_amount: amountValue
+      });
 
-      if (caseError) {
-        console.error('Case insert error:', caseError);
-        throw caseError;
+      if (error) {
+        console.error('Atomic case creation error:', error);
+        throw new Error(error.message || 'Failed to create case');
       }
 
-      console.log('Case created:', caseData);
-
-      // Step 2: Update balance stats manually (no triggers)
-      const { data: existingBalance } = await supabase
-        .from('balances')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (existingBalance) {
-        const { error: updateError } = await supabase
-          .from('balances')
-          .update({
-            amount_lost: (existingBalance.amount_lost || 0) + amountValue,
-            total_cases: (existingBalance.total_cases || 0) + 1,
-            pending_cases: (existingBalance.pending_cases || 0) + 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-
-        if (updateError) {
-          console.error('Balance update error:', updateError);
-        }
-      } else {
-        const { error: insertError } = await supabase
-          .from('balances')
-          .insert({
-            user_id: user.id,
-            amount_lost: amountValue,
-            amount_recovered: 0,
-            total_cases: 1,
-            pending_cases: 1,
-            completed_cases: 0
-          });
-
-        if (insertError) {
-          console.error('Balance insert error:', insertError);
-        }
+      const result = data?.[0];
+      if (!result?.success) {
+        console.error('Case creation failed:', result?.error_message);
+        throw new Error(result?.error_message || 'Case creation failed');
       }
 
-      console.log('Balance updated successfully');
+      console.log('Case created successfully:', result);
 
       toast({
         title: "Success",
-        description: "Case created successfully"
+        description: `Case ${result.case_number} created successfully!`
       });
 
       // Reset form
@@ -142,18 +103,18 @@ export function NewCaseDialog() {
       
       // Refresh data
       await refreshUserData();
-      console.log('Data refreshed');
+      console.log('User data refreshed successfully');
 
     } catch (error: any) {
       console.error('Error creating case:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create case",
+        description: error.message || "Failed to create case. Please try again.",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
-      console.log('Case creation completed');
+      console.log('Case creation process completed');
     }
   };
 

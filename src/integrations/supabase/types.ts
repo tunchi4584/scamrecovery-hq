@@ -64,7 +64,7 @@ export type Database = {
       cases: {
         Row: {
           amount: number
-          case_number: string | null
+          case_number: string
           created_at: string
           description: string | null
           evidence: string | null
@@ -78,7 +78,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
-          case_number?: string | null
+          case_number: string
           created_at?: string
           description?: string | null
           evidence?: string | null
@@ -92,7 +92,7 @@ export type Database = {
         }
         Update: {
           amount?: number
-          case_number?: string | null
+          case_number?: string
           created_at?: string
           description?: string | null
           evidence?: string | null
@@ -230,6 +230,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_case_atomic: {
+        Args: {
+          p_user_id: string
+          p_title: string
+          p_description: string
+          p_scam_type: string
+          p_amount: number
+        }
+        Returns: {
+          case_id: string
+          case_number: string
+          success: boolean
+          error_message: string
+        }[]
+      }
       generate_case_number: {
         Args: Record<PropertyKey, never>
         Returns: string
