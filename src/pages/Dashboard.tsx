@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -25,6 +24,7 @@ import {
   RefreshCw,
   Plus
 } from 'lucide-react';
+import { SimpleCreateCaseModal } from '@/components/SimpleCreateCaseModal';
 
 type ViewType = 'dashboard' | 'all_cases' | 'pending_cases' | 'in_progress_cases' | 'completed_cases';
 
@@ -217,7 +217,7 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center gap-3">
-              <CreateCaseModal />
+              <SimpleCreateCaseModal />
               <Button 
                 onClick={handleRefresh} 
                 disabled={refreshing}
@@ -329,7 +329,7 @@ export default function Dashboard() {
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No cases found</h3>
                   <p className="text-gray-600 mb-6">Create your first recovery case to get started.</p>
-                  <CreateCaseModal />
+                  <SimpleCreateCaseModal />
                 </div>
               ) : (
                 <div className="space-y-4">
