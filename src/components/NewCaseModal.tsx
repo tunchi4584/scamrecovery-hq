@@ -203,7 +203,37 @@ export function NewCaseModal() {
     setIsSubmitting(true);
 
     try {
-      // Prepare case data
+      console.log('Starting case creation for user:', user.id);
+
+      // First ensure user has a balance record
+      const { data: existingBalance, error: balanceError } = await supabase
+        .from('balances')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (balanceError && balanceError.code !== 'PGRST116') {
+        console.error('Balance check error:', balanceError);
+        throw new Error('Failed to check user balance');
+      }
+
+      if (!existingBalance) {
+        console.log('Creating balance record for user:', user.id);
+        const { error: createBalanceError } = await supabase
+          .from('balances')
+          .insert({
+            user_id: user.id,
+            amount_lost: 0,
+            amount_recovered: 0
+          });
+
+        if (createBalanceError) {
+          console.error('Balance creation error:', createBalanceError);
+          // Don't throw here, continue with case creation
+        }
+      }
+
+      // Prepare case data with explicit field mapping
       const caseData = {
         user_id: user.id,
         title: formData.title.trim(),
@@ -214,17 +244,17 @@ export function NewCaseModal() {
         status: 'pending'
       };
 
-      console.log('Creating case:', caseData);
+      console.log('Creating case with data:', caseData);
 
-      const { data: newCase, error } = await supabase
+      const { data: newCase, error: caseError } = await supabase
         .from('cases')
-        .insert(caseData)
-        .select()
+        .insert([caseData])
+        .select('*')
         .single();
 
-      if (error) {
-        console.error('Case creation error:', error);
-        throw new Error(error.message);
+      if (caseError) {
+        console.error('Case creation error:', caseError);
+        throw new Error(caseError.message || 'Failed to create case');
       }
 
       console.log('Case created successfully:', newCase);
@@ -234,14 +264,17 @@ export function NewCaseModal() {
         description: `Case "${formData.title}" has been submitted`
       });
 
-      // Reset and close
+      // Reset form and close modal
       resetForm();
       setIsOpen(false);
 
-      // Refresh user data
-      setTimeout(() => {
-        refreshUserData().catch(console.error);
-      }, 500);
+      // Refresh user data in background
+      try {
+        await refreshUserData();
+      } catch (refreshError) {
+        console.error('Error refreshing user data:', refreshError);
+        // Don't show error to user as case was created successfully
+      }
 
     } catch (error: any) {
       console.error('Error creating case:', error);
