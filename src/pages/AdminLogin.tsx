@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,8 +23,8 @@ export default function AdminLogin() {
   // Redirect if already logged in as admin
   useEffect(() => {
     if (!authLoading && user && isAdmin) {
-      console.log('User is already admin, redirecting to submissions');
-      navigate('/admin/submissions', { replace: true });
+      console.log('User is already admin, redirecting to dashboard');
+      navigate('/admin/dashboard', { replace: true });
     }
   }, [user, isAdmin, navigate, authLoading]);
 
@@ -48,12 +47,12 @@ export default function AdminLogin() {
       const success = await adminLogin(email, password);
       
       if (success) {
-        console.log('Admin login successful, navigating to submissions');
+        console.log('Admin login successful, navigating to dashboard');
         toast({
           title: "Admin Login Successful",
           description: "Welcome to the admin portal.",
         });
-        navigate('/admin/submissions', { replace: true });
+        navigate('/admin/dashboard', { replace: true });
       } else {
         console.log('Admin login failed');
         toast({
