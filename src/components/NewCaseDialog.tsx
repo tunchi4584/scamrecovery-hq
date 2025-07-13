@@ -64,7 +64,13 @@ export function NewCaseDialog() {
     }
 
     setLoading(true);
-    console.log('Starting atomic case creation...');
+    console.log('Starting atomic case creation with data:', {
+      user_id: user.id,
+      title: title.trim(),
+      description: description.trim() || null,
+      scam_type: scamType,
+      amount: amountValue
+    });
     
     try {
       // Use the atomic database function that handles both case creation and balance updates
