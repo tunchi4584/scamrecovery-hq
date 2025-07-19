@@ -61,6 +61,7 @@ export default function AdminUserAccounts() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     amount_lost: '',
     amount_recovered: '',
@@ -278,30 +279,37 @@ export default function AdminUserAccounts() {
     }
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!editingUser) return;
 
+    let hasUpdates = false;
+
     if (editForm.amount_lost || editForm.amount_recovered || editForm.recovery_notes) {
-      updateUserBalance(
+      await updateUserBalance(
         editingUser.profile.id,
         parseFloat(editForm.amount_lost) || editingUser.balance?.amount_lost || 0,
         parseFloat(editForm.amount_recovered) || editingUser.balance?.amount_recovered || 0,
         editForm.recovery_notes || editingUser.balance?.recovery_notes || ''
       );
+      hasUpdates = true;
     }
 
     if (editForm.case_status && editForm.case_id) {
-      updateCaseStatus(editForm.case_id, editForm.case_status);
+      await updateCaseStatus(editForm.case_id, editForm.case_status);
+      hasUpdates = true;
     }
 
-    setEditingUser(null);
-    setEditForm({
-      amount_lost: '',
-      amount_recovered: '',
-      recovery_notes: '',
-      case_status: '',
-      case_id: ''
-    });
+    if (hasUpdates) {
+      setIsDialogOpen(false);
+      setEditingUser(null);
+      setEditForm({
+        amount_lost: '',
+        amount_recovered: '',
+        recovery_notes: '',
+        case_status: '',
+        case_id: ''
+      });
+    }
   };
 
   const startEditing = (userAccount: UserAccount) => {
@@ -451,9 +459,12 @@ export default function AdminUserAccounts() {
 
               {/* Actions */}
               <div className="flex justify-end">
-                <Dialog>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={() => startEditing(userAccount)}>
+                    <Button onClick={() => {
+                      startEditing(userAccount);
+                      setIsDialogOpen(true);
+                    }}>
                       <Edit className="h-4 w-4 mr-2" />
                       Manage Account
                     </Button>
@@ -544,7 +555,17 @@ export default function AdminUserAccounts() {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setEditingUser(null)}
+                            onClick={() => {
+                              setIsDialogOpen(false);
+                              setEditingUser(null);
+                              setEditForm({
+                                amount_lost: '',
+                                amount_recovered: '',
+                                recovery_notes: '',
+                                case_status: '',
+                                case_id: ''
+                              });
+                            }}
                           >
                             <X className="h-4 w-4 mr-2" />
                             Cancel
