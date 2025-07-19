@@ -365,9 +365,9 @@ export default function Dashboard() {
                           <div className="mt-4">
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-sm font-medium text-gray-700">Progress</span>
-                              <span className="text-sm text-gray-600">20%</span>
+                              <span className="text-sm text-gray-600">{getProgressPercentage(case_.status)}%</span>
                             </div>
-                            <Progress value={20} className="h-2" />
+                            <Progress value={getProgressPercentage(case_.status)} className="h-2" />
                           </div>
                         </div>
 
