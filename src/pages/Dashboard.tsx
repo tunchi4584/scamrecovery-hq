@@ -74,11 +74,8 @@ export default function Dashboard() {
         },
         (payload) => {
           console.log('Real-time balance update received:', payload);
-          // Force refresh after a short delay to ensure DB consistency
-          setTimeout(() => {
-            console.log('Refreshing data after balance update');
-            refreshUserData();
-          }, 500);
+          // Immediately refresh data when balance changes
+          refreshUserData();
         }
       )
       .subscribe((status) => {
