@@ -238,6 +238,28 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Available Balance Section */}
+          <div className="mb-8">
+            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <DollarSign className="h-8 w-8 text-green-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-green-700">Available Balance</p>
+                      <p className="text-3xl font-bold text-green-800">
+                        ${balance?.amount_recovered ? Number(balance.amount_recovered).toLocaleString() : '0'}
+                      </p>
+                      <p className="text-sm text-green-600 mt-1">Recovered from completed cases</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Account Balance Section */}
           <div className="mb-8">
             <UserBalanceCard />
