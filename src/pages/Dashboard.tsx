@@ -350,8 +350,8 @@ export default function Dashboard() {
                             <Badge variant="outline" className="font-mono text-xs">
                               {case_.case_number || 'Generating...'}
                             </Badge>
-                            <Badge className={`bg-yellow-100 text-yellow-800 border-yellow-200 font-medium`}>
-                              {case_.status.charAt(0).toUpperCase() + case_.status.slice(1).replace('_', ' ')}
+                            <Badge className={`${getStatusColor(case_.status)} font-medium`}>
+                              {getStatusLabel(case_.status)}
                             </Badge>
                           </div>
                           
