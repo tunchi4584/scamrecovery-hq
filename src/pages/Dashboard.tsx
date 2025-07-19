@@ -46,7 +46,7 @@ export default function Dashboard() {
     console.log('Setting up real-time subscription for user:', user.id);
 
     const channel = supabase
-      .channel('dashboard-updates')
+      .channel(`dashboard-updates-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -57,7 +57,7 @@ export default function Dashboard() {
         },
         (payload) => {
           console.log('Real-time case update received:', payload);
-          refreshUserData();
+          setTimeout(() => refreshUserData(), 100);
         }
       )
       .on(
@@ -70,7 +70,7 @@ export default function Dashboard() {
         },
         (payload) => {
           console.log('Real-time balance update received:', payload);
-          refreshUserData();
+          setTimeout(() => refreshUserData(), 100);
         }
       )
       .subscribe((status) => {
@@ -81,6 +81,18 @@ export default function Dashboard() {
       console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
+  }, [user, refreshUserData]);
+
+  // Additional effect to periodically refresh data every 30 seconds when user is active
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      console.log('Periodic refresh of user data');
+      refreshUserData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, [user, refreshUserData]);
 
   const handleRefresh = async () => {
