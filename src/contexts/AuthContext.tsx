@@ -143,15 +143,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCases(casesData);
       }
 
-      // Fetch balance
-      const { data: balanceData } = await supabase
+      // Fetch balance with better error handling
+      const { data: balanceData, error: balanceError } = await supabase
         .from('balances')
         .select('*')
         .eq('user_id', userToUse.id)
-        .single();
+        .maybeSingle();
 
+      console.log('Balance query result:', { balanceData, balanceError });
+      
       if (balanceData) {
         setBalance(balanceData);
+      } else {
+        console.log('No balance data found for user:', userToUse.id);
+        setBalance(null);
       }
 
       // Check admin role

@@ -57,7 +57,11 @@ export default function Dashboard() {
         },
         (payload) => {
           console.log('Real-time case update received:', payload);
-          setTimeout(() => refreshUserData(), 100);
+          // Force refresh after a short delay to ensure DB consistency
+          setTimeout(() => {
+            console.log('Refreshing data after case update');
+            refreshUserData();
+          }, 500);
         }
       )
       .on(
@@ -70,7 +74,11 @@ export default function Dashboard() {
         },
         (payload) => {
           console.log('Real-time balance update received:', payload);
-          setTimeout(() => refreshUserData(), 100);
+          // Force refresh after a short delay to ensure DB consistency
+          setTimeout(() => {
+            console.log('Refreshing data after balance update');
+            refreshUserData();
+          }, 500);
         }
       )
       .subscribe((status) => {
@@ -83,14 +91,14 @@ export default function Dashboard() {
     };
   }, [user, refreshUserData]);
 
-  // Additional effect to periodically refresh data every 30 seconds when user is active
+  // Manual refresh every 10 seconds when user is active on dashboard
   useEffect(() => {
     if (!user) return;
 
     const interval = setInterval(() => {
       console.log('Periodic refresh of user data');
       refreshUserData();
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds for more frequent updates
 
     return () => clearInterval(interval);
   }, [user, refreshUserData]);
