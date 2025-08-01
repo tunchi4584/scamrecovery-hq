@@ -20,6 +20,7 @@ export function CreateCaseModal() {
     title: '',
     description: '',
     amount: '',
+    currency: 'USD',
     scam_type: '',
     evidence: ''
   });
@@ -35,6 +36,12 @@ export function CreateCaseModal() {
     'Tech Support Scam',
     'Advance Fee Fraud',
     'Other'
+  ];
+
+  const currencies = [
+    'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR', 'KRW',
+    'BTC', 'ETH', 'USDT', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT', 'DOGE', 'MATIC',
+    'LTC', 'AVAX', 'SHIB', 'TRX', 'UNI', 'ATOM', 'LINK', 'BCH', 'XLM', 'ALGO'
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +73,7 @@ export function CreateCaseModal() {
         title: '',
         description: '',
         amount: '',
+        currency: 'USD',
         scam_type: '',
         evidence: ''
       });
@@ -128,18 +136,35 @@ export function CreateCaseModal() {
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="amount">Amount Lost ($) *</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              placeholder="0.00"
-              required
-            />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2">
+              <Label htmlFor="amount">Amount Lost *</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                placeholder="0.00"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="currency">Currency *</Label>
+              <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Currency" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
@@ -163,6 +188,9 @@ export function CreateCaseModal() {
               placeholder="List any evidence you have: screenshots, transaction IDs, email addresses, phone numbers, websites, etc."
               rows={3}
             />
+            <p className="text-sm text-muted-foreground mt-2">
+              For detailed evidence submission, please email us at: <span className="font-medium">support@recoveryservice.com</span>
+            </p>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
