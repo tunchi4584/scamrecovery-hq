@@ -102,9 +102,11 @@ export type Database = {
           amount: number
           case_number: string
           created_at: string
+          currency: string | null
           description: string | null
           evidence: string | null
           id: string
+          incident_date: string | null
           last_updated_by: string | null
           scam_type: string | null
           status: string
@@ -118,9 +120,11 @@ export type Database = {
           amount?: number
           case_number: string
           created_at?: string
+          currency?: string | null
           description?: string | null
           evidence?: string | null
           id?: string
+          incident_date?: string | null
           last_updated_by?: string | null
           scam_type?: string | null
           status?: string
@@ -134,9 +138,11 @@ export type Database = {
           amount?: number
           case_number?: string
           created_at?: string
+          currency?: string | null
           description?: string | null
           evidence?: string | null
           id?: string
+          incident_date?: string | null
           last_updated_by?: string | null
           scam_type?: string | null
           status?: string
@@ -282,6 +288,8 @@ export type Database = {
           p_description: string
           p_scam_type: string
           p_amount: number
+          p_currency?: string
+          p_incident_date?: string
         }
         Returns: {
           case_id: string
