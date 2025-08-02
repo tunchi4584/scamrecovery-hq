@@ -4,29 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, DollarSign, CalendarIcon, Info, Mail, MessageCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { Plus, DollarSign, Info, Mail, MessageCircle, Phone } from 'lucide-react';
 
 export function CreateCaseModal() {
   const { user, refreshUserData } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [incidentDate, setIncidentDate] = useState<Date>();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     amount: '',
     currency: 'USD',
-    scam_type: ''
+    scam_type: '',
+    incident_date: ''
   });
 
   const scamTypes = [
@@ -75,7 +71,7 @@ export function CreateCaseModal() {
         p_scam_type: formData.scam_type,
         p_amount: parseFloat(formData.amount) || 0,
         p_currency: formData.currency,
-        p_incident_date: incidentDate ? format(incidentDate, 'yyyy-MM-dd') : null
+        p_incident_date: formData.incident_date || null
       });
 
       if (error || !data?.[0]?.success) {
@@ -93,9 +89,9 @@ export function CreateCaseModal() {
         description: '',
         amount: '',
         currency: 'USD',
-        scam_type: ''
+        scam_type: '',
+        incident_date: ''
       });
-      setIncidentDate(undefined);
 
       setOpen(false);
       refreshUserData();
@@ -157,31 +153,14 @@ export function CreateCaseModal() {
             </div>
 
             <div>
-              <Label htmlFor="incident_date">Incident Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !incidentDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {incidentDate ? format(incidentDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={incidentDate}
-                    onSelect={setIncidentDate}
-                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="incident_date">Incident Date (MM/DD/YYYY)</Label>
+              <Input
+                id="incident_date"
+                type="date"
+                value={formData.incident_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, incident_date: e.target.value }))}
+                max={new Date().toISOString().split('T')[0]}
+              />
             </div>
 
             <div>
@@ -235,19 +214,26 @@ export function CreateCaseModal() {
                 <p className="text-sm">
                   For evidence and documentation (screenshots, transaction IDs, emails, etc.), please submit them directly through our contact channels:
                 </p>
-                <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <div className="flex flex-col gap-3 mt-3">
                   <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium">Email:</span>
-                    <a href="mailto:support@example.com" className="text-blue-600 hover:underline">
-                      support@example.com
+                    <Phone className="h-4 w-4 text-green-600" />
+                    <span className="font-medium">WhatsApp:</span>
+                    <a href="https://wa.me/17622035587" target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
+                      +1 (762) 203-5587
                     </a>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <MessageCircle className="h-4 w-4 text-blue-500" />
                     <span className="font-medium">Telegram:</span>
-                    <a href="https://t.me/supportteam" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                      @supportteam
+                    <a href="https://t.me/Assetrecovery_HQ" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      @Assetrecovery_HQ
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-gray-600" />
+                    <span className="font-medium">Email:</span>
+                    <a href="mailto:assetrecovery36@gmail.com" className="text-gray-600 hover:underline">
+                      assetrecovery36@gmail.com
                     </a>
                   </div>
                 </div>
