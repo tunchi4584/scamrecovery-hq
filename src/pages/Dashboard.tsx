@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CaseDetailsModal } from '@/components/CaseDetailsModal';
+import { CreateCaseModal } from '@/components/CreateCaseModal';
 
 import { UserBalanceCard } from '@/components/UserBalanceCard';
 import { CaseDetailsView } from '@/components/CaseDetailsView';
@@ -225,6 +226,7 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center gap-3">
+              <CreateCaseModal onCaseCreated={handleRefresh} />
               <Button 
                 onClick={handleRefresh} 
                 disabled={refreshing}
@@ -357,7 +359,8 @@ export default function Dashboard() {
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No cases found</h3>
-                  <p className="text-gray-600">Contact us to create your first recovery case.</p>
+                  <p className="text-gray-600 mb-6">Create your first recovery case to get started.</p>
+                  <CreateCaseModal onCaseCreated={handleRefresh} />
                 </div>
               ) : (
                 <div className="space-y-4">
