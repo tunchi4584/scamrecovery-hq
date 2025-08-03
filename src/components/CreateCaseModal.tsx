@@ -72,6 +72,44 @@ export function CreateCaseModal({ onCaseCreated }: CreateCaseModalProps) {
       return;
     }
 
+    // Ensure user has a profile record before creating a case
+    try {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        // Create a profile record for the user
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+            email: user.email || ''
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          toast({
+            title: "Profile Error",
+            description: "Failed to create user profile. Please contact support.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Profile check error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to verify user profile. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Convert date from MM/DD/YYYY to YYYY-MM-DD if provided
