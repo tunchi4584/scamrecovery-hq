@@ -72,46 +72,31 @@ export function CreateCaseModal({ onCaseCreated }: CreateCaseModalProps) {
       return;
     }
 
-    // Ensure user has a profile record before creating a case
-    try {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!existingProfile) {
-        // Create a profile record for the user
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-            email: user.email || ''
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          toast({
-            title: "Profile Error",
-            description: "Failed to create user profile. Please contact support.",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Profile check error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to verify user profile. Please try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     try {
+      // First ensure user has a profile - create if not exists
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          email: user.email || ''
+        }, {
+          onConflict: 'id'
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Profile upsert error:', profileError);
+        toast({
+          title: "Profile Error",
+          description: "Failed to create/update user profile. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Convert date from MM/DD/YYYY to YYYY-MM-DD if provided
       let formattedDate = null;
       if (formData.incident_date) {
@@ -122,29 +107,34 @@ export function CreateCaseModal({ onCaseCreated }: CreateCaseModalProps) {
         }
       }
 
-      // Use the atomic function to create case with auto-generated case number
-      const { data, error } = await supabase.rpc('create_case_atomic', {
-        p_user_id: user.id,
-        p_title: formData.title,
-        p_description: formData.description,
-        p_scam_type: formData.scam_type,
-        p_amount: parseFloat(formData.amount) || 0,
-        p_currency: formData.currency,
-        p_incident_date: formattedDate
-      });
+      // Generate case number manually to avoid conflicts
+      const caseNumber = `CASE-${new Date().getFullYear()}-${Date.now()}`;
 
-      if (error) {
-        console.error('Database error:', error);
-        throw new Error(error.message || 'Failed to create case');
-      }
+      // Insert case directly instead of using RPC function
+      const { data: newCase, error: caseError } = await supabase
+        .from('cases')
+        .insert({
+          user_id: user.id,
+          title: formData.title,
+          description: formData.description,
+          scam_type: formData.scam_type,
+          amount: parseFloat(formData.amount) || 0,
+          currency: formData.currency,
+          incident_date: formattedDate,
+          case_number: caseNumber,
+          status: 'pending'
+        })
+        .select()
+        .single();
 
-      if (!data || data.length === 0 || !data[0]?.success) {
-        throw new Error(data?.[0]?.error_message || 'Failed to create case');
+      if (caseError) {
+        console.error('Case creation error:', caseError);
+        throw new Error(caseError.message || 'Failed to create case');
       }
 
       toast({
         title: "Success",
-        description: `Your case has been created successfully. Case Number: ${data[0].case_number}`,
+        description: `Your case has been created successfully. Case Number: ${newCase.case_number}`,
       });
 
       // Reset form
