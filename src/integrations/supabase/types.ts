@@ -281,7 +281,7 @@ export type Database = {
         Args: { p_case_id: string; p_message: string; p_status?: string }
         Returns: string
       }
-      create_case_atomic: {
+      create_case_simple: {
         Args: {
           p_user_id: string
           p_title: string
@@ -291,12 +291,7 @@ export type Database = {
           p_currency?: string
           p_incident_date?: string
         }
-        Returns: {
-          case_id: string
-          case_number: string
-          success: boolean
-          error_message: string
-        }[]
+        Returns: Json
       }
       generate_case_number: {
         Args: Record<PropertyKey, never>
