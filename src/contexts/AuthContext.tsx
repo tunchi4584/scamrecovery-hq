@@ -36,6 +36,7 @@ interface UserBalance {
   total_cases: number;
   completed_cases: number;
   pending_cases: number;
+  updated_at: string;
 }
 
 interface AuthContextType {
@@ -113,6 +114,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeout);
     };
   }, []);
+
+  // Set up real-time subscriptions for balance updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`auth-balance-updates-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'balances',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('AuthContext: Real-time balance update received:', payload);
+          refreshUserData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const refreshUserData = async (currentUser?: User) => {
     const userToUse = currentUser || user;

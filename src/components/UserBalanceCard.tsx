@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { DollarSign, TrendingUp, TrendingDown, Calculator } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Calculator, FileText } from 'lucide-react';
 
 export function UserBalanceCard() {
   const { balance } = useAuth();
@@ -75,9 +75,15 @@ export function UserBalanceCard() {
         </div>
 
         {balance.recovery_notes && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Recovery Notes</h4>
-            <p className="text-sm text-gray-700">{balance.recovery_notes}</p>
+          <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Admin Notes & Updates
+            </h4>
+            <p className="text-sm text-blue-800 leading-relaxed">{balance.recovery_notes}</p>
+            <div className="mt-3 text-xs text-blue-600">
+              Last updated by admin
+            </div>
           </div>
         )}
       </CardContent>
