@@ -52,11 +52,12 @@ export function UserBalanceCard() {
           <div className="bg-green-50 p-4 rounded-lg border">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium text-green-600">Amount Recovered</span>
+              <span className="text-sm font-medium text-green-600">Account Balance</span>
             </div>
             <p className="text-2xl font-bold text-green-700">
               ${balance.amount_recovered?.toLocaleString() || '0'}
             </p>
+            <p className="text-xs text-green-600 mt-1">Amount Recovered</p>
           </div>
 
           <div className="bg-blue-50 p-4 rounded-lg border">
