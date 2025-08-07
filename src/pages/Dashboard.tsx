@@ -251,10 +251,10 @@ export default function Dashboard() {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-green-700">Available Balance</p>
-                      <p className="text-3xl font-bold text-green-800">
-                        ${balance?.amount_recovered ? Number(balance.amount_recovered).toLocaleString() : '0'}
-                      </p>
-                      <p className="text-sm text-green-600 mt-1">Recovered from completed cases</p>
+                       <p className="text-3xl font-bold text-green-800">
+                         ${balance?.amount_recovered ? Number(balance.amount_recovered).toLocaleString() : '0'}
+                       </p>
+                       <p className="text-sm text-green-600 mt-1">Amount recovered (set by admin)</p>
                     </div>
                   </div>
                 </div>
