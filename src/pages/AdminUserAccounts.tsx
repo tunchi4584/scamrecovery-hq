@@ -143,26 +143,47 @@ export default function AdminUserAccounts() {
 
       console.log('Admin role verified, updating balance');
 
-      const { error } = await supabase
+      // Use update with conflict resolution instead of upsert
+      const { data: existingBalance } = await supabase
         .from('balances')
-        .upsert({
-          user_id: userId,
-          amount_lost: amountLost,
-          amount_recovered: amountRecovered,
-          recovery_notes: notes,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', userId)
+        .single();
 
-      if (error) {
-        console.error('Balance update error:', error);
-        throw error;
+      let result;
+      if (existingBalance) {
+        // Update existing balance
+        result = await supabase
+          .from('balances')
+          .update({
+            amount_lost: amountLost,
+            amount_recovered: amountRecovered,
+            recovery_notes: notes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+      } else {
+        // Insert new balance
+        result = await supabase
+          .from('balances')
+          .insert({
+            user_id: userId,
+            amount_lost: amountLost,
+            amount_recovered: amountRecovered,
+            recovery_notes: notes
+          });
+      }
+
+      if (result.error) {
+        console.error('Balance update error:', result.error);
+        throw result.error;
       }
 
       console.log('Balance updated successfully');
 
       toast({
         title: "Success",
-        description: "User balance updated successfully",
+        description: "User balance updated successfully - Amount recovered can be updated regardless of case status",
       });
 
       fetchUserAccounts();
@@ -486,16 +507,17 @@ export default function AdminUserAccounts() {
                           />
                         </div>
                         
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            Amount Recovered ($)
-                            <span className="text-xs text-gray-500 block">Manually set recovery amount (independent of case status)</span>
-                          </label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editForm.amount_recovered}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, amount_recovered: e.target.value }))}
+                         <div>
+                           <label className="block text-sm font-medium mb-2">
+                             Amount Recovered ($)
+                             <span className="text-xs text-green-600 block font-medium">✓ Can be updated for any case status (pending, in progress, etc.)</span>
+                           </label>
+                           <Input
+                             type="number"
+                             step="0.01"
+                             min="0"
+                             value={editForm.amount_recovered}
+                             onChange={(e) => setEditForm(prev => ({ ...prev, amount_recovered: e.target.value }))}
                             placeholder="Enter amount recovered"
                           />
                         </div>

@@ -331,7 +331,10 @@ function EditBalanceForm({ balance, onUpdate, onCancel }: EditBalanceFormProps) 
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Amount Recovered ($)</label>
+        <label className="block text-sm font-medium mb-2">
+          Amount Recovered ($)
+          <span className="text-xs text-green-600 block font-medium">✓ Updates regardless of case status</span>
+        </label>
         <Input
           type="number"
           step="0.01"
