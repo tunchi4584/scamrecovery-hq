@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { ContactIcons } from '@/components/ContactIcons';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
@@ -33,8 +34,9 @@ export function Header() {
   ];
 
   return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      <header className="bg-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
@@ -155,7 +157,9 @@ export function Header() {
             </nav>
           </div>
         )}
-      </div>
-    </header>
+        </div>
+      </header>
+      <ContactIcons />
+    </>
   );
 }
