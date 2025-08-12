@@ -1,7 +1,11 @@
-import { Mail, MessageCircle, Phone } from 'lucide-react';
+import { useState } from 'react';
+import { Mail, MessageCircle, Phone, Headphones, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 
 export function ContactIcons() {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const contacts = [
     {
       icon: Phone,
@@ -35,27 +39,52 @@ export function ContactIcons() {
 
   return (
     <TooltipProvider>
-      <div className="flex justify-center items-center gap-6 py-4 bg-gray-50 dark:bg-gray-800 border-b">
-        {contacts.map((contact, index) => {
-          const IconComponent = contact.icon;
-          return (
-            <Tooltip key={index}>
-              <TooltipTrigger asChild>
-                <a
-                  href={contact.href}
-                  target={contact.href.startsWith('http') ? '_blank' : undefined}
-                  rel={contact.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                  className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 ${contact.className}`}
-                >
-                  <IconComponent />
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{contact.label}</p>
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
+      <div className="fixed bottom-6 right-6 z-50">
+        {/* Floating Contact Button */}
+        <div className="relative">
+          {/* Expanded Contact Options */}
+          {isExpanded && (
+            <div className="absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border p-4 min-w-[200px] animate-in slide-in-from-bottom-2 fade-in-0">
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Contact Us</h3>
+                {contacts.map((contact, index) => {
+                  const IconComponent = contact.icon;
+                  return (
+                    <Tooltip key={index}>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={contact.href}
+                          target={contact.href.startsWith('http') ? '_blank' : undefined}
+                          rel={contact.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                          className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${contact.className}`}
+                        >
+                          <IconComponent className="h-5 w-5" />
+                          <span className="text-sm font-medium">{contact.label}</span>
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>{contact.label}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Main Floating Button */}
+          <Button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-primary hover:bg-primary/90"
+            size="sm"
+          >
+            {isExpanded ? (
+              <X className="h-6 w-6 text-primary-foreground" />
+            ) : (
+              <Headphones className="h-6 w-6 text-primary-foreground" />
+            )}
+          </Button>
+        </div>
       </div>
     </TooltipProvider>
   );
