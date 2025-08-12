@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Settings, Database, Mail, Shield, Phone, Edit, Save, X, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -34,47 +35,37 @@ interface Contact {
 }
 
 export default function AdminSettings() {
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      id: '1',
-      platform: 'phone',
-      label: 'Call',
-      value: '+17622035587',
-      icon_type: 'phone',
-      is_active: true,
-      display_order: 1
-    },
-    {
-      id: '2',
-      platform: 'email',
-      label: 'Email',
-      value: 'assetrecovery36@gmail.com',
-      icon_type: 'email',
-      is_active: true,
-      display_order: 2
-    },
-    {
-      id: '3',
-      platform: 'whatsapp',
-      label: 'WhatsApp',
-      value: 'https://wa.me/17622035587',
-      icon_type: 'whatsapp',
-      is_active: true,
-      display_order: 3
-    },
-    {
-      id: '4',
-      platform: 'telegram',
-      label: 'Telegram',
-      value: 'https://t.me/Assetrecovery_HQ',
-      icon_type: 'telegram',
-      is_active: true,
-      display_order: 4
-    }
-  ]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  const fetchContacts = async () => {
+    try {
+      // @ts-ignore - contacts table exists but not in types yet
+      const { data, error } = await (supabase as any)
+        .from('contacts')
+        .select('*')
+        .order('display_order');
+
+      if (error) throw error;
+      setContacts((data as unknown as Contact[]) || []);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load contacts",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const platformOptions = [
     { value: 'phone', label: 'Phone' },
@@ -83,40 +74,76 @@ export default function AdminSettings() {
     { value: 'telegram', label: 'Telegram' },
   ];
 
-  const handleSave = (contactData: Partial<Contact>) => {
-    if (editingContact?.id) {
-      // Update existing contact
-      setContacts(contacts.map(c => 
-        c.id === editingContact.id ? { ...c, ...contactData } : c
-      ));
+  const handleSave = async (contactData: Partial<Contact>) => {
+    try {
+      if (editingContact?.id) {
+        // Update existing contact
+        // @ts-ignore - contacts table exists but not in types yet
+        const { error } = await (supabase as any)
+          .from('contacts')
+          .update(contactData)
+          .eq('id', editingContact.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Contact updated successfully",
+        });
+      } else {
+        // Create new contact
+        // @ts-ignore - contacts table exists but not in types yet
+        const { error } = await (supabase as any)
+          .from('contacts')
+          .insert(contactData);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Contact created successfully",
+        });
+      }
+      
+      await fetchContacts(); // Refresh the list
+      setIsDialogOpen(false);
+      setEditingContact(null);
+    } catch (error) {
+      console.error('Error saving contact:', error);
       toast({
-        title: "Success",
-        description: "Contact updated successfully",
-      });
-    } else {
-      // Create new contact
-      const newContact = {
-        ...contactData,
-        id: Date.now().toString(),
-      } as Contact;
-      setContacts([...contacts, newContact]);
-      toast({
-        title: "Success",
-        description: "Contact created successfully",
+        title: "Error",
+        description: "Failed to save contact",
+        variant: "destructive",
       });
     }
-    setIsDialogOpen(false);
-    setEditingContact(null);
   };
 
-  const toggleContactStatus = (id: string) => {
-    setContacts(contacts.map(c => 
-      c.id === id ? { ...c, is_active: !c.is_active } : c
-    ));
-    toast({
-      title: "Success",
-      description: "Contact status updated",
-    });
+  const toggleContactStatus = async (id: string) => {
+    try {
+      const contact = contacts.find(c => c.id === id);
+      if (!contact) return;
+
+      // @ts-ignore - contacts table exists but not in types yet
+      const { error } = await (supabase as any)
+        .from('contacts')
+        .update({ is_active: !contact.is_active })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchContacts(); // Refresh the list
+      toast({
+        title: "Success",
+        description: "Contact status updated",
+      });
+    } catch (error) {
+      console.error('Error updating contact status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update contact status",
+        variant: "destructive",
+      });
+    }
   };
 
   const ContactForm = ({ contact, onSave, onCancel }: {
@@ -230,8 +257,11 @@ export default function AdminSettings() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">Manage contact information displayed throughout the website.</p>
-            <div className="space-y-3">
-              {contacts.map((contact) => (
+            {loading ? (
+              <div className="text-center py-4">Loading contacts...</div>
+            ) : (
+              <div className="space-y-3">
+                {contacts.map((contact) => (
                 <div key={contact.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div>
@@ -269,8 +299,9 @@ export default function AdminSettings() {
                     </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

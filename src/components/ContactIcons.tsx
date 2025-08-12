@@ -19,46 +19,45 @@ export function ContactIcons() {
   const [contacts, setContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
-    // Set default contacts for now until Supabase types are updated
-    setContacts([
-      {
-        id: '1',
-        platform: 'phone',
-        label: 'Call',
-        value: '+17622035587',
-        icon_type: 'phone',
-        is_active: true,
-        display_order: 1
-      },
-      {
-        id: '2',
-        platform: 'email',
-        label: 'Email',
-        value: 'assetrecovery36@gmail.com',
-        icon_type: 'email',
-        is_active: true,
-        display_order: 2
-      },
-      {
-        id: '3',
-        platform: 'whatsapp',
-        label: 'WhatsApp',
-        value: 'https://wa.me/17622035587',
-        icon_type: 'whatsapp',
-        is_active: true,
-        display_order: 3
-      },
-      {
-        id: '4',
-        platform: 'telegram',
-        label: 'Telegram',
-        value: 'https://t.me/Assetrecovery_HQ',
-        icon_type: 'telegram',
-        is_active: true,
-        display_order: 4
-      }
-    ]);
+    fetchContacts();
   }, []);
+
+  const fetchContacts = async () => {
+    try {
+      // @ts-ignore - contacts table exists but not in types yet
+      const { data, error } = await (supabase as any)
+        .from('contacts')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+
+      if (error) throw error;
+      setContacts((data as unknown as Contact[]) || []);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      // Fallback to default contacts if database fails
+      setContacts([
+        {
+          id: '1',
+          platform: 'phone',
+          label: 'Call',
+          value: '+17622035587',
+          icon_type: 'phone',
+          is_active: true,
+          display_order: 1
+        },
+        {
+          id: '2',
+          platform: 'email',
+          label: 'Email',
+          value: 'assetrecovery36@gmail.com',
+          icon_type: 'email',
+          is_active: true,
+          display_order: 2
+        }
+      ]);
+    }
+  };
 
   const getIcon = (iconType: string) => {
     switch (iconType) {
