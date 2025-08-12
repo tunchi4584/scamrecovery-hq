@@ -1,8 +1,14 @@
 
 import { Link } from 'react-router-dom';
 import { Shield, Phone, Mail, MapPin, MessageCircle } from 'lucide-react';
+import { useContacts } from '@/hooks/useContacts';
 
 export function Footer() {
+  const { contacts } = useContacts();
+  
+  const getContactByType = (type: string) => {
+    return contacts.find(contact => contact.platform === type);
+  };
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -18,22 +24,24 @@ export function Footer() {
               With over 10 years of experience, we've successfully recovered millions for our clients.
             </p>
             <div className="flex space-x-4">
-              <a 
-                href="https://wa.me/17622035587" 
-                className="bg-green-600 hover:bg-green-700 p-3 rounded-full transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
-              <a 
-                href="https://t.me/Assetrecovery_HQ" 
-                className="bg-blue-500 hover:bg-blue-600 p-3 rounded-full transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
+              {contacts
+                .filter(contact => contact.platform === 'whatsapp' || contact.platform === 'telegram')
+                .map(contact => (
+                  <a 
+                    key={contact.id}
+                    href={contact.value}
+                    className={`p-3 rounded-full transition-colors ${
+                      contact.platform === 'whatsapp' 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-blue-500 hover:bg-blue-600'
+                    }`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                  </a>
+                ))
+              }
             </div>
           </div>
 
@@ -53,14 +61,18 @@ export function Footer() {
           <div>
             <h3 className="text-xl font-semibold mb-4">Contact Info</h3>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <Phone className="h-5 w-5 text-blue-400" />
-                <span className="text-gray-300 text-lg">+1 (762) 203-5587</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Mail className="h-5 w-5 text-blue-400" />
-                <span className="text-gray-300 text-lg">assetrecovery36@gmail.com</span>
-              </div>
+              {getContactByType('phone') && (
+                <div className="flex items-center space-x-3">
+                  <Phone className="h-5 w-5 text-blue-400" />
+                  <span className="text-gray-300 text-lg">{getContactByType('phone')?.value}</span>
+                </div>
+              )}
+              {getContactByType('email') && (
+                <div className="flex items-center space-x-3">
+                  <Mail className="h-5 w-5 text-blue-400" />
+                  <span className="text-gray-300 text-lg">{getContactByType('email')?.value}</span>
+                </div>
+              )}
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-blue-400" />
                 <span className="text-gray-300 text-lg">New York, NY 10001</span>

@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useContacts } from '@/hooks/useContacts';
 import { Plus, DollarSign, Info, Mail, MessageCircle, Phone, Loader2 } from 'lucide-react';
 
 interface CreateCaseModalProps {
@@ -18,6 +19,7 @@ interface CreateCaseModalProps {
 export function CreateCaseModal({ onCaseCreated }: CreateCaseModalProps) {
   const { user, refreshUserData } = useAuth();
   const { toast } = useToast();
+  const { contacts } = useContacts();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -297,27 +299,64 @@ export function CreateCaseModal({ onCaseCreated }: CreateCaseModalProps) {
                   For evidence and documentation (screenshots, transaction IDs, emails, etc.), please submit them directly through our contact channels:
                 </p>
                 <div className="flex flex-col gap-3 mt-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">WhatsApp:</span>
-                    <a href="https://wa.me/17622035587" target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
-                      +1 (762) 203-5587
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MessageCircle className="h-4 w-4 text-blue-500" />
-                    <span className="font-medium">Telegram:</span>
-                    <a href="https://t.me/Assetrecovery_HQ" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                      @Assetrecovery_HQ
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-gray-600" />
-                    <span className="font-medium">Email:</span>
-                    <a href="mailto:assetrecovery36@gmail.com" className="text-gray-600 hover:underline">
-                      assetrecovery36@gmail.com
-                    </a>
-                  </div>
+                  {contacts.map(contact => {
+                    const getIcon = () => {
+                      switch (contact.icon_type) {
+                        case 'phone':
+                          return <Phone className="h-4 w-4 text-green-600" />;
+                        case 'email':
+                          return <Mail className="h-4 w-4 text-gray-600" />;
+                        case 'whatsapp':
+                          return <MessageCircle className="h-4 w-4 text-green-600" />;
+                        case 'telegram':
+                          return <MessageCircle className="h-4 w-4 text-blue-500" />;
+                        default:
+                          return <Phone className="h-4 w-4 text-gray-600" />;
+                      }
+                    };
+
+                    const getHref = () => {
+                      switch (contact.platform) {
+                        case 'phone':
+                          return `tel:${contact.value}`;
+                        case 'email':
+                          return `mailto:${contact.value}`;
+                        default:
+                          return contact.value;
+                      }
+                    };
+
+                    const getClassName = () => {
+                      switch (contact.platform) {
+                        case 'whatsapp':
+                          return 'text-green-600 hover:underline';
+                        case 'telegram':
+                          return 'text-blue-500 hover:underline';
+                        case 'email':
+                          return 'text-gray-600 hover:underline';
+                        default:
+                          return 'text-gray-600 hover:underline';
+                      }
+                    };
+
+                    return (
+                      <div key={contact.id} className="flex items-center gap-2 text-sm">
+                        {getIcon()}
+                        <span className="font-medium">{contact.label}:</span>
+                        <a 
+                          href={getHref()} 
+                          target={contact.value.startsWith('http') ? '_blank' : undefined}
+                          rel={contact.value.startsWith('http') ? 'noopener noreferrer' : undefined}
+                          className={getClassName()}
+                        >
+                          {contact.platform === 'telegram' && contact.value.includes('t.me') 
+                            ? contact.value.split('/').pop() 
+                            : contact.value
+                          }
+                        </a>
+                      </div>
+                    );
+                  })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   Please include your case number in your correspondence for faster processing.
