@@ -305,12 +305,27 @@ export default function AdminUserAccounts() {
 
     let hasUpdates = false;
 
-    if (editForm.amount_lost || editForm.amount_recovered || editForm.recovery_notes) {
+    // Always update balance if any balance-related fields have been modified
+    const currentAmountLost = editingUser.balance?.amount_lost || 0;
+    const currentAmountRecovered = editingUser.balance?.amount_recovered || 0;
+    const currentNotes = editingUser.balance?.recovery_notes || '';
+
+    const newAmountLost = editForm.amount_lost !== '' ? parseFloat(editForm.amount_lost) || 0 : currentAmountLost;
+    const newAmountRecovered = editForm.amount_recovered !== '' ? parseFloat(editForm.amount_recovered) || 0 : currentAmountRecovered;
+    const newNotes = editForm.recovery_notes !== '' ? editForm.recovery_notes : currentNotes;
+
+    // Check if any balance values have actually changed
+    const balanceChanged = 
+      newAmountLost !== currentAmountLost ||
+      newAmountRecovered !== currentAmountRecovered ||
+      newNotes !== currentNotes;
+
+    if (balanceChanged) {
       await updateUserBalance(
         editingUser.profile.id,
-        parseFloat(editForm.amount_lost) || editingUser.balance?.amount_lost || 0,
-        parseFloat(editForm.amount_recovered) || editingUser.balance?.amount_recovered || 0,
-        editForm.recovery_notes || editingUser.balance?.recovery_notes || ''
+        newAmountLost,
+        newAmountRecovered,
+        newNotes
       );
       hasUpdates = true;
     }
