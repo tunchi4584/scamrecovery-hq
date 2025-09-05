@@ -70,12 +70,11 @@ export default function Index() {
                     Free Case Review
                   </Button>
                 </a>
-                <a href="tel:+17622035587">
+                <Link to="/services">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4">
-                    <Phone className="mr-2 h-5 w-5" />
-                    Call Now
+                    Services
                   </Button>
-                </a>
+                </Link>
               </div>
             </div>
           </div>
