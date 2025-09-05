@@ -131,6 +131,11 @@ export function CaseDetailsModal({ case_, children }: CaseDetailsModalProps) {
                   <div>
                     <p className="text-sm text-gray-600">Amount</p>
                     <p className="text-lg font-semibold">${Number(case_.amount).toLocaleString()}</p>
+                    {case_.amount_recovered > 0 && (
+                      <p className="text-sm text-green-600 font-medium">
+                        Recovered: ${Number(case_.amount_recovered).toLocaleString()}
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -252,6 +257,15 @@ export function CaseDetailsModal({ case_, children }: CaseDetailsModalProps) {
                   <div>
                     <label className="text-sm font-medium text-gray-600">Amount Involved</label>
                     <p className="text-lg font-semibold text-green-600">${Number(case_.amount).toLocaleString()}</p>
+                    {case_.amount_recovered > 0 && (
+                      <div className="mt-2">
+                        <label className="text-sm font-medium text-gray-600">Amount Recovered</label>
+                        <p className="text-lg font-semibold text-green-600">${Number(case_.amount_recovered).toLocaleString()}</p>
+                        {case_.recovery_notes && (
+                          <p className="text-sm text-gray-600 mt-1">{case_.recovery_notes}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {case_.submission_id && (

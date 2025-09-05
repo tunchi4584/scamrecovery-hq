@@ -100,6 +100,7 @@ export type Database = {
         Row: {
           admin_notes: string | null
           amount: number
+          amount_recovered: number
           case_number: string
           created_at: string
           currency: string | null
@@ -108,6 +109,7 @@ export type Database = {
           id: string
           incident_date: string | null
           last_updated_by: string | null
+          recovery_notes: string | null
           scam_type: string | null
           status: string
           submission_id: string | null
@@ -118,6 +120,7 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           amount?: number
+          amount_recovered?: number
           case_number: string
           created_at?: string
           currency?: string | null
@@ -126,6 +129,7 @@ export type Database = {
           id?: string
           incident_date?: string | null
           last_updated_by?: string | null
+          recovery_notes?: string | null
           scam_type?: string | null
           status?: string
           submission_id?: string | null
@@ -136,6 +140,7 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           amount?: number
+          amount_recovered?: number
           case_number?: string
           created_at?: string
           currency?: string | null
@@ -144,6 +149,7 @@ export type Database = {
           id?: string
           incident_date?: string | null
           last_updated_by?: string | null
+          recovery_notes?: string | null
           scam_type?: string | null
           status?: string
           submission_id?: string | null

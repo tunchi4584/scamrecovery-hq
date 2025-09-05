@@ -43,6 +43,8 @@ interface UserCase {
   id: string;
   title: string;
   amount: number;
+  amount_recovered: number;
+  recovery_notes: string | null;
   status: string;
   created_at: string;
 }
@@ -63,12 +65,10 @@ export default function AdminUserAccounts() {
   const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    amount_lost: '',
-    amount_recovered: '',
-    recovery_notes: '',
     case_status: '',
     case_id: ''
   });
+  const [caseRecoveries, setCaseRecoveries] = useState<Record<string, { amount_recovered: string; recovery_notes: string }>>({});
 
   useEffect(() => {
     if (!user || !isAdmin) {
@@ -95,10 +95,10 @@ export default function AdminUserAccounts() {
 
       if (balancesError) throw balancesError;
 
-      // Fetch cases
+      // Fetch cases with recovery amounts
       const { data: cases, error: casesError } = await supabase
         .from('cases')
-        .select('*')
+        .select('*, amount_recovered, recovery_notes')
         .order('created_at', { ascending: false });
 
       if (casesError) throw casesError;
@@ -123,10 +123,9 @@ export default function AdminUserAccounts() {
     }
   };
 
-  const updateUserBalance = async (userId: string, amountLost: number, amountRecovered: number, notes: string) => {
+  const updateCaseRecovery = async (caseId: string, amountRecovered: number, recoveryNotes: string) => {
     try {
-      console.log('Admin updating user balance:', { userId, amountLost, amountRecovered, notes });
-      console.log('Current admin user:', user?.id, 'isAdmin:', isAdmin);
+      console.log('Admin updating case recovery:', { caseId, amountRecovered, recoveryNotes });
       
       // Verify admin status first
       const { data: roleCheck, error: roleError } = await supabase
@@ -141,57 +140,35 @@ export default function AdminUserAccounts() {
         throw new Error('Admin privileges required');
       }
 
-      console.log('Admin role verified, updating balance');
+      console.log('Admin role verified, updating case recovery');
 
-      // Use update with conflict resolution instead of upsert
-      const { data: existingBalance } = await supabase
-        .from('balances')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
+      const { error } = await supabase
+        .from('cases')
+        .update({
+          amount_recovered: amountRecovered,
+          recovery_notes: recoveryNotes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', caseId);
 
-      let result;
-      if (existingBalance) {
-        // Update existing balance
-        result = await supabase
-          .from('balances')
-          .update({
-            amount_lost: amountLost,
-            amount_recovered: amountRecovered,
-            recovery_notes: notes,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId);
-      } else {
-        // Insert new balance
-        result = await supabase
-          .from('balances')
-          .insert({
-            user_id: userId,
-            amount_lost: amountLost,
-            amount_recovered: amountRecovered,
-            recovery_notes: notes
-          });
+      if (error) {
+        console.error('Case recovery update error:', error);
+        throw error;
       }
 
-      if (result.error) {
-        console.error('Balance update error:', result.error);
-        throw result.error;
-      }
-
-      console.log('Balance updated successfully');
+      console.log('Case recovery updated successfully');
 
       toast({
         title: "Success",
-        description: "User balance updated successfully - Amount recovered can be updated regardless of case status",
+        description: "Case recovery amount updated successfully",
       });
 
       fetchUserAccounts();
     } catch (error: any) {
-      console.error('Error updating balance:', error);
+      console.error('Error updating case recovery:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update user balance",
+        description: error.message || "Failed to update case recovery",
         variant: "destructive"
       });
     }
@@ -305,29 +282,18 @@ export default function AdminUserAccounts() {
 
     let hasUpdates = false;
 
-    // Always update balance if any balance-related fields have been modified
-    const currentAmountLost = editingUser.balance?.amount_lost || 0;
-    const currentAmountRecovered = editingUser.balance?.amount_recovered || 0;
-    const currentNotes = editingUser.balance?.recovery_notes || '';
-
-    const newAmountLost = editForm.amount_lost !== '' ? parseFloat(editForm.amount_lost) || 0 : currentAmountLost;
-    const newAmountRecovered = editForm.amount_recovered !== '' ? parseFloat(editForm.amount_recovered) || 0 : currentAmountRecovered;
-    const newNotes = editForm.recovery_notes !== '' ? editForm.recovery_notes : currentNotes;
-
-    // Check if any balance values have actually changed
-    const balanceChanged = 
-      newAmountLost !== currentAmountLost ||
-      newAmountRecovered !== currentAmountRecovered ||
-      newNotes !== currentNotes;
-
-    if (balanceChanged) {
-      await updateUserBalance(
-        editingUser.profile.id,
-        newAmountLost,
-        newAmountRecovered,
-        newNotes
-      );
-      hasUpdates = true;
+    // Update individual case recovery amounts
+    for (const [caseId, recovery] of Object.entries(caseRecoveries)) {
+      const currentCase = editingUser.cases.find(c => c.id === caseId);
+      if (currentCase) {
+        const newAmount = parseFloat(recovery.amount_recovered) || 0;
+        const newNotes = recovery.recovery_notes || '';
+        
+        if (newAmount !== currentCase.amount_recovered || newNotes !== (currentCase.recovery_notes || '')) {
+          await updateCaseRecovery(caseId, newAmount, newNotes);
+          hasUpdates = true;
+        }
+      }
     }
 
     if (editForm.case_status && editForm.case_id) {
@@ -336,27 +302,37 @@ export default function AdminUserAccounts() {
     }
 
     if (hasUpdates) {
+      // Trigger balance recalculation for the user
+      if (editingUser.profile.id) {
+        await supabase.rpc('update_user_balance_stats', { p_user_id: editingUser.profile.id });
+      }
+      
       setIsDialogOpen(false);
       setEditingUser(null);
       setEditForm({
-        amount_lost: '',
-        amount_recovered: '',
-        recovery_notes: '',
         case_status: '',
         case_id: ''
       });
+      setCaseRecoveries({});
     }
   };
 
   const startEditing = (userAccount: UserAccount) => {
     setEditingUser(userAccount);
     setEditForm({
-      amount_lost: userAccount.balance?.amount_lost?.toString() || '',
-      amount_recovered: userAccount.balance?.amount_recovered?.toString() || '',
-      recovery_notes: userAccount.balance?.recovery_notes || '',
       case_status: '',
       case_id: ''
     });
+    
+    // Initialize case recovery amounts from current case data
+    const initialRecoveries: Record<string, { amount_recovered: string; recovery_notes: string }> = {};
+    userAccount.cases.forEach(caseItem => {
+      initialRecoveries[caseItem.id] = {
+        amount_recovered: caseItem.amount_recovered?.toString() || '0',
+        recovery_notes: caseItem.recovery_notes || ''
+      };
+    });
+    setCaseRecoveries(initialRecoveries);
   };
 
   const filteredAccounts = userAccounts.filter(account =>
@@ -505,50 +481,81 @@ export default function AdminUserAccounts() {
                       Manage Account
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Manage User Account</DialogTitle>
+                      <DialogTitle>Manage User Account - Individual Case Recovery</DialogTitle>
                     </DialogHeader>
                     {editingUser && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Amount Lost ($)</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editForm.amount_lost}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, amount_lost: e.target.value }))}
-                            placeholder="Enter amount lost"
-                          />
-                        </div>
-                        
-                         <div>
-                           <label className="block text-sm font-medium mb-2">
-                             Amount Recovered ($)
-                             <span className="text-xs text-green-600 block font-medium">✓ Can be updated for any case status (pending, in progress, etc.)</span>
-                           </label>
-                           <Input
-                             type="number"
-                             step="0.01"
-                             min="0"
-                             value={editForm.amount_recovered}
-                             onChange={(e) => setEditForm(prev => ({ ...prev, amount_recovered: e.target.value }))}
-                            placeholder="Enter amount recovered"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-2">Recovery Notes</label>
-                          <Textarea
-                            value={editForm.recovery_notes}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, recovery_notes: e.target.value }))}
-                            placeholder="Add recovery notes..."
-                            rows={3}
-                          />
-                        </div>
-
+                      <div className="space-y-6">
+                        {/* Case Recovery Section */}
                         {editingUser.cases.length > 0 && (
-                          <>
+                          <div>
+                            <label className="block text-sm font-medium mb-4">
+                              Individual Case Recovery Amounts
+                              <span className="text-xs text-green-600 block font-medium">✓ Update recovery amounts per case - totals will be calculated automatically</span>
+                            </label>
+                            <div className="space-y-4">
+                              {editingUser.cases.map((caseItem) => (
+                                <Card key={caseItem.id} className="p-4">
+                                  <div className="space-y-3">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h4 className="font-medium text-sm">{caseItem.title}</h4>
+                                        <p className="text-xs text-gray-600">Case Amount: ${Number(caseItem.amount).toLocaleString()}</p>
+                                        <Badge className={getStatusColor(caseItem.status)}>
+                                          {caseItem.status.charAt(0).toUpperCase() + caseItem.status.slice(1).replace('_', ' ')}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">Amount Recovered ($)</label>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          min="0"
+                                          max={caseItem.amount}
+                                          value={caseRecoveries[caseItem.id]?.amount_recovered || '0'}
+                                          onChange={(e) => setCaseRecoveries(prev => ({
+                                            ...prev,
+                                            [caseItem.id]: {
+                                              ...prev[caseItem.id],
+                                              amount_recovered: e.target.value
+                                            }
+                                          }))}
+                                          placeholder="0.00"
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                      
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">Recovery Notes</label>
+                                        <Input
+                                          type="text"
+                                          value={caseRecoveries[caseItem.id]?.recovery_notes || ''}
+                                          onChange={(e) => setCaseRecoveries(prev => ({
+                                            ...prev,
+                                            [caseItem.id]: {
+                                              ...prev[caseItem.id],
+                                              recovery_notes: e.target.value
+                                            }
+                                          }))}
+                                          placeholder="Recovery details..."
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Case Status Update Section */}
+                        {editingUser.cases.length > 0 && (
+                          <div className="border-t pt-4">
                             <div>
                               <label className="block text-sm font-medium mb-2">Update Case Status</label>
                               <Select
@@ -561,7 +568,7 @@ export default function AdminUserAccounts() {
                                 <SelectContent>
                                   {editingUser.cases.map((caseItem) => (
                                     <SelectItem key={caseItem.id} value={caseItem.id}>
-                                      {caseItem.title}
+                                      {caseItem.title} - ${Number(caseItem.amount).toLocaleString()}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -569,7 +576,7 @@ export default function AdminUserAccounts() {
                             </div>
 
                             {editForm.case_id && (
-                              <div>
+                              <div className="mt-3">
                                 <label className="block text-sm font-medium mb-2">New Status</label>
                                 <Select
                                   value={editForm.case_status}
@@ -588,7 +595,30 @@ export default function AdminUserAccounts() {
                                 </Select>
                               </div>
                             )}
-                          </>
+                          </div>
+                        )}
+
+                        {/* Summary */}
+                        {editingUser.cases.length > 0 && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <h4 className="font-medium text-sm mb-2">Current Totals:</h4>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">Total Amount:</span>
+                                <span className="font-medium ml-2">
+                                  ${editingUser.cases.reduce((sum, c) => sum + Number(c.amount), 0).toLocaleString()}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Total Recovered:</span>
+                                <span className="font-medium ml-2 text-green-600">
+                                  ${Object.values(caseRecoveries).reduce((sum, recovery) => 
+                                    sum + (parseFloat(recovery.amount_recovered) || 0), 0
+                                  ).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         )}
 
                         <div className="flex justify-end space-x-2 pt-4">
@@ -599,12 +629,10 @@ export default function AdminUserAccounts() {
                               setIsDialogOpen(false);
                               setEditingUser(null);
                               setEditForm({
-                                amount_lost: '',
-                                amount_recovered: '',
-                                recovery_notes: '',
                                 case_status: '',
                                 case_id: ''
                               });
+                              setCaseRecoveries({});
                             }}
                           >
                             <X className="h-4 w-4 mr-2" />

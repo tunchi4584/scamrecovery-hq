@@ -116,6 +116,12 @@ export function CaseDetailsView({ filter, onBack }: CaseDetailsViewProps) {
                       <DollarSign className="h-4 w-4" />
                       {case_.amount?.toLocaleString() || '0'}
                     </div>
+                    {case_.amount_recovered > 0 && (
+                      <div className="flex items-center gap-1 text-blue-600 font-medium text-sm mt-1">
+                        <DollarSign className="h-3 w-3" />
+                        {case_.amount_recovered.toLocaleString()} recovered
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -139,6 +145,13 @@ export function CaseDetailsView({ filter, onBack }: CaseDetailsViewProps) {
                     <div>
                       <span className="text-sm font-medium text-gray-600">Evidence:</span>
                       <p className="text-sm text-gray-700 mt-1">{case_.evidence}</p>
+                    </div>
+                  )}
+
+                  {case_.recovery_notes && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Recovery Notes:</span>
+                      <p className="text-sm text-green-700 mt-1">{case_.recovery_notes}</p>
                     </div>
                   )}
 

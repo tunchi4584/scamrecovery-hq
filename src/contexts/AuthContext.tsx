@@ -15,6 +15,8 @@ export interface UserCase {
   id: string;
   title: string;
   amount: number;
+  amount_recovered: number;
+  recovery_notes: string | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -115,11 +117,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Set up real-time subscriptions for balance updates
+  // Set up real-time subscriptions for balance and case updates
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    const balanceChannel = supabase
       .channel(`auth-balance-updates-${user.id}`)
       .on(
         'postgres_changes',
@@ -136,8 +138,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       )
       .subscribe();
 
+    const caseChannel = supabase
+      .channel(`auth-case-updates-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cases',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('AuthContext: Real-time case update received:', payload);
+          refreshUserData();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(balanceChannel);
+      supabase.removeChannel(caseChannel);
     };
   }, [user]);
 
@@ -159,10 +179,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(profileData);
       }
 
-      // Fetch cases
+      // Fetch cases with recovery amounts
       const { data: casesData } = await supabase
         .from('cases')
-        .select('*')
+        .select('*, amount_recovered, recovery_notes')
         .eq('user_id', userToUse.id)
         .order('created_at', { ascending: false });
 
