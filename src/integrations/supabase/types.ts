@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -168,6 +168,42 @@ export type Database = {
           },
         ]
       }
+      contacts: {
+        Row: {
+          created_at: string
+          display_order: number
+          icon_type: string
+          id: string
+          is_active: boolean
+          label: string
+          platform: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          icon_type: string
+          id?: string
+          is_active?: boolean
+          label: string
+          platform: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          icon_type?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          platform?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -283,13 +319,13 @@ export type Database = {
       }
       create_case_simple: {
         Args: {
-          p_user_id: string
-          p_title: string
-          p_description: string
-          p_scam_type: string
           p_amount: number
           p_currency?: string
+          p_description: string
           p_incident_date?: string
+          p_scam_type: string
+          p_title: string
+          p_user_id: string
         }
         Returns: Json
       }
@@ -299,8 +335,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
