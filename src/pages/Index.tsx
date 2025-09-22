@@ -142,13 +142,13 @@ export default function Index() {
               </p>
               <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
                 <a href="#free-review">
-                  <Button size="lg" variant="cta" className="text-lg px-10 py-6 font-heading group animate-glow">
+                  <Button size="lg" variant="premium" className="text-lg px-10 py-6 font-heading group">
                     <Zap className="mr-2 h-5 w-5 icon-hover" />
                     Free Case Review
                   </Button>
                 </a>
                 <Link to="/services">
-                  <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-white text-white hover:bg-white hover:text-primary group">
+                  <Button size="lg" variant="glassmorphism" className="text-lg px-10 py-6 font-heading group">
                     Our Services
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </Button>
@@ -374,10 +374,10 @@ export default function Index() {
                   </div>
 
                   <div className="pt-6">
-                    <Button type="submit" size="lg" variant="cta" className="w-full text-xl py-6 font-heading">
-                      {!user ? 'Create Account to Submit' : 'Submit Free Case Review'}
-                      <ArrowRight className="ml-3 h-6 w-6" />
-                    </Button>
+                  <Button type="submit" size="lg" variant="premium" className="w-full text-xl py-6 font-heading">
+                    {!user ? 'Create Account to Submit' : 'Submit Free Case Review'}
+                    <ArrowRight className="ml-3 h-6 w-6" />
+                  </Button>
                   </div>
                 </form>
               </CardContent>
@@ -519,13 +519,13 @@ export default function Index() {
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <a href="#free-review">
-              <Button size="lg" variant="cta" className="text-lg px-10 py-6 font-heading bg-accent hover:bg-accent/90 group animate-glow">
+              <Button size="lg" variant="premium" className="text-lg px-10 py-6 font-heading group">
                 <Phone className="mr-2 h-5 w-5 icon-hover" />
                 Start Your Recovery Today
               </Button>
             </a>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-white text-white hover:bg-white hover:text-primary group">
+              <Button size="lg" variant="glassmorphism" className="text-lg px-10 py-6 font-heading group">
                 Contact Our Experts
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>

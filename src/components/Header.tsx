@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ContactIcons } from '@/components/ContactIcons';
 import { useAuth } from '@/contexts/AuthContext';
+import { useScrolled } from '@/hooks/useScrolled';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const isScrolled = useScrolled();
 
   const handleSignOut = async () => {
     await signOut();
@@ -35,15 +37,21 @@ export function Header() {
 
   return (
     <>
-      <header className="bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-border">
+      <header className={`bg-white/95 backdrop-blur-md border-b sticky top-0 z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'shadow-lg border-border/50' 
+          : 'shadow-none border-transparent'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-6">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl group-hover:scale-110 transition-transform duration-200">
+            <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-xl">
               <Shield className="h-8 w-8 text-white" />
             </div>
-            <span className="text-2xl font-heading font-bold text-foreground">ScamRecovery Pro</span>
+            <span className="text-2xl font-heading font-bold text-foreground group-hover:text-primary transition-colors duration-200">
+              ScamRecovery Pro
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -101,7 +109,7 @@ export function Header() {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button size="sm" variant="cta" className="font-heading">
+                  <Button size="sm" variant="premium" className="font-heading">
                     Sign Up
                   </Button>
                 </Link>
@@ -123,7 +131,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-6 border-t bg-white/95 backdrop-blur-sm">
+          <div className="md:hidden py-6 border-t bg-white/98 backdrop-blur-md shadow-lg">
             <nav className="space-y-2">
               {navigation.map((item) => (
                 <Link

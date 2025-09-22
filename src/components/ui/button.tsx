@@ -20,6 +20,9 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         accent: "bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg hover:shadow-xl transform hover:scale-105",
         cta: "bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-lg hover:shadow-2xl transform hover:scale-105 font-semibold",
+        premium: "bg-gradient-to-r from-accent via-accent to-accent/90 text-white border-0 shadow-lg hover:shadow-xl hover:scale-105 backdrop-blur-sm relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:via-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300",
+        glassmorphism: "bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-lg hover:bg-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300",
+        luxury: "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white border border-slate-700/50 shadow-xl hover:shadow-2xl hover:scale-105 backdrop-blur-sm relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/10 before:via-white/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500",
       },
       size: {
         default: "h-10 px-4 py-2",
