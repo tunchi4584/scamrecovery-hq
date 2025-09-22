@@ -37,9 +37,9 @@ export function Header() {
 
   return (
     <>
-      <header className={`bg-white/95 backdrop-blur-md border-b sticky top-0 z-50 transition-all duration-300 ${
+      <header className={`bg-slate-900/95 backdrop-blur-md border-b sticky top-0 z-50 transition-all duration-300 ${
         isScrolled 
-          ? 'shadow-lg border-border/50' 
+          ? 'shadow-lg border-slate-600/50' 
           : 'shadow-none border-transparent'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +49,7 @@ export function Header() {
             <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-xl">
               <Shield className="h-8 w-8 text-white" />
             </div>
-            <span className="text-2xl font-heading font-bold text-foreground group-hover:text-primary transition-colors duration-200">
+            <span className="text-2xl font-heading font-bold text-white group-hover:text-accent transition-colors duration-200">
               ScamRecovery Pro
             </span>
           </Link>
@@ -60,7 +60,7 @@ export function Header() {
               <Link
                 key={item.name}
                 to={item.href}
-                className="text-muted-foreground hover:text-accent px-4 py-3 text-sm font-heading font-medium transition-all duration-200 rounded-lg hover:bg-accent/10"
+                className="text-slate-300 hover:text-accent px-4 py-3 text-sm font-heading font-medium transition-all duration-200 rounded-lg hover:bg-accent/10"
               >
                 {item.name}
               </Link>
@@ -121,9 +121,9 @@ export function Header() {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? (
-                <X className="h-6 w-6 text-foreground" />
+                <X className="h-6 w-6 text-white" />
               ) : (
-                <Menu className="h-6 w-6 text-foreground" />
+                <Menu className="h-6 w-6 text-white" />
               )}
             </button>
           </div>
@@ -131,13 +131,13 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-6 border-t bg-white/98 backdrop-blur-md shadow-lg">
+          <div className="md:hidden py-6 border-t border-slate-600/50 bg-slate-900/98 backdrop-blur-md shadow-lg">
             <nav className="space-y-2">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className="block px-4 py-3 text-muted-foreground hover:text-accent hover:bg-accent/10 text-sm font-heading font-medium rounded-lg transition-all duration-200"
+                  className="block px-4 py-3 text-slate-300 hover:text-accent hover:bg-accent/10 text-sm font-heading font-medium rounded-lg transition-all duration-200"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}
@@ -147,7 +147,7 @@ export function Header() {
                 <>
                   <Link
                     to="/dashboard"
-                    className="block px-4 py-3 text-muted-foreground hover:text-accent hover:bg-accent/10 text-sm font-heading font-medium rounded-lg transition-all duration-200"
+                    className="block px-4 py-3 text-slate-300 hover:text-accent hover:bg-accent/10 text-sm font-heading font-medium rounded-lg transition-all duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Dashboard
@@ -157,7 +157,7 @@ export function Header() {
                       handleSignOut();
                       setIsMenuOpen(false);
                     }}
-                    className="block w-full text-left px-4 py-3 text-muted-foreground hover:text-accent hover:bg-accent/10 text-sm font-heading font-medium rounded-lg transition-all duration-200"
+                    className="block w-full text-left px-4 py-3 text-slate-300 hover:text-accent hover:bg-accent/10 text-sm font-heading font-medium rounded-lg transition-all duration-200"
                   >
                     Sign Out
                   </button>

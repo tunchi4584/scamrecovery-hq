@@ -8,36 +8,37 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 99%;
-    --foreground: 210 18% 20%;
+    /* Dark theme as primary */
+    --background: 210 30% 8%;
+    --foreground: 210 20% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 210 18% 20%;
+    --card: 210 25% 12%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 18% 20%;
+    --popover: 210 25% 12%;
+    --popover-foreground: 210 20% 95%;
 
-    /* Navy primary color */
-    --primary: 210 40% 15%;
-    --primary-foreground: 0 0% 98%;
+    /* Teal as primary in dark theme */
+    --primary: 174 72% 56%;
+    --primary-foreground: 210 30% 8%;
     
     /* Teal accent color */
     --accent: 174 72% 56%;
-    --accent-foreground: 210 40% 15%;
+    --accent-foreground: 210 30% 8%;
 
-    /* Light gray background variations */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 210 18% 20%;
+    /* Dark variations */
+    --secondary: 210 20% 18%;
+    --secondary-foreground: 210 20% 95%;
 
-    --muted: 210 16% 93%;
-    --muted-foreground: 210 12% 55%;
+    --muted: 210 20% 18%;
+    --muted-foreground: 210 15% 70%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 210 20% 95%;
 
-    --border: 210 18% 87%;
-    --input: 210 18% 87%;
-    --ring: 210 40% 15%;
+    --border: 210 20% 18%;
+    --input: 210 20% 18%;
+    --ring: 174 72% 56%;
 
     --radius: 0.75rem;
     
@@ -65,34 +66,35 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .dark {
-    --background: 210 30% 8%;
-    --foreground: 210 20% 95%;
+  .light {
+    /* Light theme as alternative */
+    --background: 0 0% 99%;
+    --foreground: 210 18% 20%;
 
-    --card: 210 25% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 18% 20%;
 
-    --popover: 210 25% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 18% 20%;
 
-    --primary: 174 72% 56%;
-    --primary-foreground: 210 30% 8%;
+    --primary: 210 40% 15%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 20% 18%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 210 18% 20%;
 
-    --muted: 210 20% 18%;
-    --muted-foreground: 210 15% 70%;
+    --muted: 210 16% 93%;
+    --muted-foreground: 210 12% 55%;
 
     --accent: 174 72% 56%;
-    --accent-foreground: 210 30% 8%;
+    --accent-foreground: 210 40% 15%;
 
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 20% 95%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 210 20% 18%;
-    --input: 210 20% 18%;
-    --ring: 174 72% 56%;
+    --border: 210 18% 87%;
+    --input: 210 18% 87%;
+    --ring: 210 40% 15%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
