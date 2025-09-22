@@ -18,9 +18,20 @@ import {
   Bitcoin,
   TrendingUp,
   Award,
-  Zap
+  Zap,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+import { 
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import { useState } from 'react';
+import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -36,6 +47,10 @@ export default function Index() {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const autoplayPlugin = React.useRef(
+    Autoplay({ delay: 4000, stopOnInteraction: true })
+  );
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,8 +362,11 @@ export default function Index() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent)/0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--primary)/0.1),transparent_50%)]"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-5xl lg:text-6xl font-heading font-bold text-foreground mb-8">
               Success <span className="text-accent">Stories</span>
@@ -359,45 +377,104 @@ export default function Index() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="group hover:shadow-2xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
-                <CardContent className="p-10">
-                  <div className="flex items-center mb-6">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-6 w-6 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-lg font-body text-muted-foreground mb-8 leading-relaxed italic">
-                    "{testimonial.text}"
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <img 
-                        src={testimonial.image}
-                        alt={testimonial.name}
-                        className="w-16 h-16 rounded-full object-cover ring-4 ring-accent/20"
-                      />
-                      <div className="ml-4">
-                        <p className="font-heading font-bold text-lg text-foreground">{testimonial.name}</p>
-                        <p className="font-body text-muted-foreground">{testimonial.scamType}</p>
-                      </div>
+          <div className="relative">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[autoplayPlugin.current]}
+              className="w-full max-w-6xl mx-auto"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {testimonials.map((testimonial, index) => (
+                  <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/2">
+                    <div className="p-1">
+                      <Card className="group hover:shadow-2xl transition-all duration-500 border-0 shadow-lg bg-gradient-to-br from-white via-white to-accent/5 hover:-translate-y-2 hover:scale-105">
+                        <CardContent className="p-8 lg:p-10 relative overflow-hidden">
+                          {/* Subtle gradient overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                          
+                          <div className="relative z-10">
+                            <div className="flex items-center mb-6">
+                              {[...Array(testimonial.rating)].map((_, i) => (
+                                <Star 
+                                  key={i} 
+                                  className="h-6 w-6 text-yellow-400 fill-current transform group-hover:scale-110 transition-transform duration-300" 
+                                  style={{
+                                    transitionDelay: `${i * 100}ms`
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            
+                            <div className="relative mb-8">
+                              <div className="absolute -left-2 -top-2 text-6xl text-accent/20 font-serif leading-none">"</div>
+                              <p className="text-lg font-body text-muted-foreground leading-relaxed italic pl-8 pr-4 relative z-10">
+                                {testimonial.text}
+                              </p>
+                              <div className="absolute -right-2 -bottom-4 text-6xl text-accent/20 font-serif leading-none rotate-180">"</div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className="relative">
+                                  <div className="absolute inset-0 bg-accent/20 rounded-full blur-md group-hover:scale-110 transition-transform duration-300"></div>
+                                  <img 
+                                    src={testimonial.image}
+                                    alt={testimonial.name}
+                                    className="relative w-16 h-16 rounded-full object-cover ring-4 ring-white shadow-lg"
+                                  />
+                                </div>
+                                <div className="ml-4">
+                                  <p className="font-heading font-bold text-lg text-foreground group-hover:text-accent transition-colors duration-300">
+                                    {testimonial.name}
+                                  </p>
+                                  <p className="font-body text-muted-foreground text-sm">
+                                    {testimonial.scamType}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="bg-gradient-to-r from-accent to-accent/80 bg-clip-text text-transparent">
+                                  <p className="text-2xl font-heading font-bold">
+                                    {testimonial.amount}
+                                  </p>
+                                </div>
+                                <p className="text-sm font-body text-muted-foreground">
+                                  Recovered
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-heading font-bold text-accent">{testimonial.amount}</p>
-                      <p className="text-sm font-body text-muted-foreground">Recovered</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              
+              {/* Custom Navigation Buttons */}
+              <CarouselPrevious className="hidden md:flex -left-16 lg:-left-20 w-12 h-12 bg-white/80 backdrop-blur-sm border-2 border-accent/20 hover:border-accent hover:bg-accent hover:text-white shadow-lg transition-all duration-300" />
+              <CarouselNext className="hidden md:flex -right-16 lg:-right-20 w-12 h-12 bg-white/80 backdrop-blur-sm border-2 border-accent/20 hover:border-accent hover:bg-accent hover:text-white shadow-lg transition-all duration-300" />
+              
+              {/* Dots Indicator */}
+              <div className="flex justify-center mt-12 space-x-3">
+                {testimonials.map((_, index) => (
+                  <div
+                    key={index}
+                    className="w-3 h-3 rounded-full bg-accent/30 hover:bg-accent transition-colors duration-300 cursor-pointer"
+                  />
+                ))}
+              </div>
+            </Carousel>
           </div>
 
           <div className="text-center mt-16">
             <Link to="/testimonials">
-              <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-2 border-primary">
+              <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-2 border-primary hover:bg-primary hover:text-white transition-all duration-300 group">
                 Read More Success Stories
-                <ArrowRight className="ml-2 h-6 w-6" />
+                <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
             </Link>
           </div>
