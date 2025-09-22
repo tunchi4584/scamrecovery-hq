@@ -34,6 +34,7 @@ import { useState } from 'react';
 import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 export default function Index() {
   const [reviewForm, setReviewForm] = useState({
@@ -51,6 +52,8 @@ export default function Index() {
   const autoplayPlugin = React.useRef(
     Autoplay({ delay: 4000, stopOnInteraction: true })
   );
+
+  useScrollAnimation();
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,15 +142,15 @@ export default function Index() {
               </p>
               <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
                 <a href="#free-review">
-                  <Button size="lg" variant="cta" className="text-lg px-10 py-6 font-heading">
-                    <Zap className="mr-2 h-5 w-5" />
+                  <Button size="lg" variant="cta" className="text-lg px-10 py-6 font-heading group animate-glow">
+                    <Zap className="mr-2 h-5 w-5 icon-hover" />
                     Free Case Review
                   </Button>
                 </a>
                 <Link to="/services">
-                  <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-white text-white hover:bg-white hover:text-primary">
+                  <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-white text-white hover:bg-white hover:text-primary group">
                     Our Services
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </Button>
                 </Link>
               </div>
@@ -167,16 +170,26 @@ export default function Index() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-r from-slate-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50/30 to-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,hsl(var(--primary)/0.1),transparent_50%)]"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center group">
-                <div className={`inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-6 group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
-                  <stat.icon className={`h-10 w-10 ${stat.color}`} />
+              <div key={index} className={`slide-up stagger-${index + 1}`}>
+                <div className="text-center group card-hover bg-white rounded-2xl p-8 shadow-lg border border-slate-100/50">
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300">
+                      <stat.icon className={`h-10 w-10 ${stat.color} icon-hover`} />
+                    </div>
+                  </div>
+                  <div className="text-4xl lg:text-5xl font-heading font-bold text-foreground mb-3 group-hover:text-accent transition-colors duration-300">
+                    {stat.value}
+                  </div>
+                  <div className="text-lg font-body text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                    {stat.label}
+                  </div>
                 </div>
-                <div className="text-4xl lg:text-5xl font-heading font-bold text-foreground mb-3">{stat.value}</div>
-                <div className="text-lg font-body text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -184,9 +197,10 @@ export default function Index() {
       </section>
 
       {/* Services Overview */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
+      <section className="py-24 bg-gradient-to-br from-white via-slate-50/30 to-blue-50/20 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,hsl(var(--accent)/0.1),transparent_50%)]"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20 slide-up">
             <h2 className="text-5xl lg:text-6xl font-heading font-bold text-foreground mb-8">
               How We <span className="text-accent">Help You</span>
             </h2>
@@ -198,37 +212,48 @@ export default function Index() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {services.map((service, index) => (
-              <Card key={index} className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg">
-                <CardContent className="p-10 text-center h-full">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-accent to-accent/80 rounded-2xl mb-8 group-hover:scale-110 transition-transform duration-300">
-                    <service.icon className="h-10 w-10 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-heading font-bold text-foreground mb-4">{service.title}</h3>
-                  <p className="font-body text-muted-foreground text-lg leading-relaxed mb-6">{service.description}</p>
-                  
-                  <div className="space-y-3 mb-6">
-                    {service.features.map((feature, i) => (
-                      <div key={i} className="flex items-center justify-center text-sm font-body text-muted-foreground">
-                        <CheckCircle className="h-4 w-4 text-accent mr-2" />
-                        {feature}
+              <div key={index} className={`slide-up stagger-${index + 1}`}>
+                <Card className="group card-hover border-0 shadow-lg bg-white/80 backdrop-blur-sm h-full overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <CardContent className="relative p-10 text-center h-full flex flex-col">
+                    <div className="relative mb-8">
+                      <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/20 rounded-2xl blur-lg animate-glow opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <div className="relative inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-accent to-accent/80 rounded-2xl shadow-lg group-hover:shadow-2xl transition-all duration-300 animate-float">
+                        <service.icon className="h-10 w-10 text-white icon-hover" />
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold">
-                    <Award className="h-4 w-4 mr-2" />
-                    {service.successRate} Success Rate
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                    
+                    <h3 className="text-2xl font-heading font-bold text-foreground mb-4 group-hover:text-accent transition-colors duration-300">
+                      {service.title}
+                    </h3>
+                    <p className="font-body text-muted-foreground text-lg leading-relaxed mb-6 flex-grow">
+                      {service.description}
+                    </p>
+                    
+                    <div className="space-y-3 mb-6">
+                      {service.features.map((feature, i) => (
+                        <div key={i} className={`flex items-center justify-center text-sm font-body text-muted-foreground transition-all duration-300 hover:text-foreground stagger-${i + 1}`}>
+                          <CheckCircle className="h-4 w-4 text-accent mr-2 icon-hover" />
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="inline-flex items-center bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <Award className="h-4 w-4 mr-2 animate-bounce-soft" />
+                      {service.successRate} Success Rate
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             ))}
           </div>
 
-          <div className="text-center mt-16">
+          <div className="text-center mt-16 slide-up">
             <Link to="/services">
-              <Button size="lg" variant="accent" className="text-lg px-10 py-6 font-heading">
+              <Button size="lg" variant="accent" className="text-lg px-10 py-6 font-heading group">
                 View All Services
-                <ArrowRight className="ml-2 h-6 w-6" />
+                <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
             </Link>
           </div>
@@ -494,15 +519,15 @@ export default function Index() {
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <a href="#free-review">
-              <Button size="lg" variant="cta" className="text-lg px-10 py-6 font-heading bg-accent hover:bg-accent/90">
-                <Phone className="mr-2 h-5 w-5" />
+              <Button size="lg" variant="cta" className="text-lg px-10 py-6 font-heading bg-accent hover:bg-accent/90 group animate-glow">
+                <Phone className="mr-2 h-5 w-5 icon-hover" />
                 Start Your Recovery Today
               </Button>
             </a>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-white text-white hover:bg-white hover:text-primary">
+              <Button size="lg" variant="outline" className="text-lg px-10 py-6 font-heading border-white text-white hover:bg-white hover:text-primary group">
                 Contact Our Experts
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
             </Link>
           </div>
