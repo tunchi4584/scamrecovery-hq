@@ -127,7 +127,7 @@ export default function Index() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-24 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground py-24 overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=60 height=60 viewBox=0 0 60 60 xmlns=http://www.w3.org/2000/svg%3E%3Cg fill=none fill-rule=evenodd%3E%3Cg fill=%23ffffff fill-opacity=0.05%3E%3Ccircle cx=30 cy=30 r=2/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -170,16 +170,16 @@ export default function Index() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-secondary via-muted to-secondary relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,hsl(var(--primary)/0.1),transparent_50%)]"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className={`slide-up stagger-${index + 1}`}>
-                <div className="text-center group card-hover bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-slate-600/30">
+                <div className="text-center group card-hover bg-card/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-border/50">
                   <div className="relative mb-6">
                     <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div className="relative inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-slate-700 to-slate-600 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <div className="relative inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-muted to-secondary rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300">
                       <stat.icon className={`h-10 w-10 ${stat.color} icon-hover`} />
                     </div>
                   </div>
@@ -197,7 +197,7 @@ export default function Index() {
       </section>
 
       {/* Services Overview */}
-      <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative">
+      <section className="py-24 bg-gradient-to-br from-background via-secondary/30 to-muted/20 relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,hsl(var(--accent)/0.1),transparent_50%)]"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20 slide-up">
@@ -213,7 +213,7 @@ export default function Index() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {services.map((service, index) => (
               <div key={index} className={`slide-up stagger-${index + 1}`}>
-                <Card className="group card-hover border-0 shadow-xl bg-slate-800/80 backdrop-blur-sm h-full overflow-hidden">
+                <Card className="group card-hover border border-border/50 shadow-xl bg-card/80 backdrop-blur-sm h-full overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <CardContent className="relative p-10 text-center h-full flex flex-col">
                     <div className="relative mb-8">
@@ -261,7 +261,7 @@ export default function Index() {
       </section>
 
       {/* Free Case Review Form */}
-      <section id="free-review" className="py-24 bg-gradient-to-br from-slate-800 to-slate-700">
+      <section id="free-review" className="py-24 bg-gradient-to-br from-secondary to-muted">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-5xl lg:text-6xl font-heading font-bold text-foreground mb-8">
@@ -280,9 +280,9 @@ export default function Index() {
             )}
           </div>
 
-          <Card className="shadow-2xl border border-slate-600/30 overflow-hidden bg-slate-800/50 backdrop-blur-sm">
+          <Card className="shadow-2xl border border-border/30 overflow-hidden bg-card/50 backdrop-blur-sm">
             <div className="bg-gradient-to-r from-accent/10 to-primary/10 p-2">
-              <CardContent className="p-10 bg-slate-800/80 rounded-lg backdrop-blur-sm">
+              <CardContent className="p-10 bg-card/80 rounded-lg backdrop-blur-sm">
                 <form onSubmit={handleReviewSubmit} className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
@@ -387,7 +387,7 @@ export default function Index() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-br from-background via-secondary to-muted/30 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent)/0.1),transparent_50%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--primary)/0.1),transparent_50%)]"></div>
         
@@ -415,7 +415,7 @@ export default function Index() {
                 {testimonials.map((testimonial, index) => (
                   <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/2">
                     <div className="p-1">
-                      <Card className="group hover:shadow-2xl transition-all duration-500 border border-slate-600/30 shadow-xl bg-gradient-to-br from-slate-800/90 via-slate-800/90 to-slate-700/90 backdrop-blur-sm hover:-translate-y-2 hover:scale-105">
+                      <Card className="group hover:shadow-2xl transition-all duration-500 border border-border/30 shadow-xl bg-gradient-to-br from-card/90 via-card/90 to-card/70 backdrop-blur-sm hover:-translate-y-2 hover:scale-105">
                         <CardContent className="p-8 lg:p-10 relative overflow-hidden">
                           {/* Subtle gradient overlay */}
                           <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -480,8 +480,8 @@ export default function Index() {
               </CarouselContent>
               
               {/* Custom Navigation Buttons */}
-              <CarouselPrevious className="hidden md:flex -left-16 lg:-left-20 w-12 h-12 bg-slate-800/80 backdrop-blur-sm border-2 border-accent/30 hover:border-accent hover:bg-accent hover:text-white shadow-lg transition-all duration-300" />
-              <CarouselNext className="hidden md:flex -right-16 lg:-right-20 w-12 h-12 bg-slate-800/80 backdrop-blur-sm border-2 border-accent/30 hover:border-accent hover:bg-accent hover:text-white shadow-lg transition-all duration-300" />
+              <CarouselPrevious className="hidden md:flex -left-16 lg:-left-20 w-12 h-12 bg-card/80 backdrop-blur-sm border-2 border-accent/30 hover:border-accent hover:bg-accent hover:text-accent-foreground shadow-lg transition-all duration-300" />
+              <CarouselNext className="hidden md:flex -right-16 lg:-right-20 w-12 h-12 bg-card/80 backdrop-blur-sm border-2 border-accent/30 hover:border-accent hover:bg-accent hover:text-accent-foreground shadow-lg transition-all duration-300" />
               
               {/* Dots Indicator */}
               <div className="flex justify-center mt-12 space-x-3">
@@ -507,7 +507,7 @@ export default function Index() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-slate-900 to-slate-800 text-white relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=60 height=60 viewBox=0 0 60 60 xmlns=http://www.w3.org/2000/svg%3E%3Cg fill=none fill-rule=evenodd%3E%3Cg fill=%23ffffff fill-opacity=0.1%3E%3Cpath d=M30 30c0-11.046 8.954-20 20-20s20 8.954 20 20-8.954 20-20 20-20-8.954-20-20z/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl lg:text-5xl font-heading font-bold mb-6">
