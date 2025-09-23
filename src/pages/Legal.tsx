@@ -6,17 +6,17 @@ import { Shield, FileText, Eye, Lock } from 'lucide-react';
 
 export default function Legal() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
               Legal Information
             </h1>
-            <p className="text-xl lg:text-2xl text-blue-100 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl lg:text-2xl text-primary-foreground/80 max-w-4xl mx-auto leading-relaxed">
               Your privacy and rights are our priority. Review our legal policies and compliance information.
             </p>
           </div>
@@ -29,25 +29,25 @@ export default function Legal() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6 text-center">
-                <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-bold text-lg">Privacy Policy</h3>
               </CardContent>
             </Card>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6 text-center">
-                <FileText className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-bold text-lg">Terms of Service</h3>
               </CardContent>
             </Card>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6 text-center">
-                <Eye className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <Eye className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-bold text-lg">Disclaimers</h3>
               </CardContent>
             </Card>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="p-6 text-center">
-                <Lock className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <Lock className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-bold text-lg">GDPR Compliance</h3>
               </CardContent>
             </Card>

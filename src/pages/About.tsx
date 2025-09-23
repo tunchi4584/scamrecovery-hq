@@ -40,17 +40,17 @@ export default function About() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
               About ScamRecovery Pro
             </h1>
-            <p className="text-xl lg:text-2xl text-blue-100 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl lg:text-2xl text-primary-foreground/80 max-w-4xl mx-auto leading-relaxed">
               We are the leading scam recovery service with over a decade of experience 
               helping victims reclaim their stolen funds and rebuild their financial security.
             </p>
@@ -63,22 +63,22 @@ export default function About() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">Our Mission</h2>
-              <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+              <h2 className="text-4xl font-bold text-foreground mb-6">Our Mission</h2>
+              <p className="text-xl text-muted-foreground mb-6 leading-relaxed">
                 At ScamRecovery Pro, our mission is simple: to help scam victims recover their stolen funds 
                 and restore their financial peace of mind. We understand the devastating impact that financial 
                 fraud can have on individuals and families.
               </p>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
                 With our team of experienced investigators, legal experts, and financial recovery specialists, 
                 we've developed proven strategies to track down scammers and recover funds across various 
                 types of fraud schemes.
               </p>
               <div className="flex items-center space-x-4">
-                <Shield className="h-12 w-12 text-blue-600" />
+                <Shield className="h-12 w-12 text-primary" />
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Trusted & Secure</h3>
-                  <p className="text-gray-600">Licensed and bonded with the highest security standards</p>
+                  <h3 className="text-xl font-bold text-foreground">Trusted & Secure</h3>
+                  <p className="text-muted-foreground">Licensed and bonded with the highest security standards</p>
                 </div>
               </div>
             </div>
@@ -87,9 +87,9 @@ export default function About() {
               {achievements.map((achievement, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <achievement.icon className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                    <div className="text-3xl font-bold text-gray-900">{achievement.value}</div>
-                    <div className="text-gray-600 font-medium">{achievement.label}</div>
+                    <achievement.icon className="h-12 w-12 text-primary mx-auto mb-4" />
+                    <div className="text-3xl font-bold text-foreground">{achievement.value}</div>
+                    <div className="text-muted-foreground font-medium">{achievement.label}</div>
                   </CardContent>
                 </Card>
               ))}
@@ -99,11 +99,11 @@ export default function About() {
       </section>
 
       {/* Our Process */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-muted/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">How We Help You</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <h2 className="text-4xl font-bold text-foreground mb-6">How We Help You</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Our proven 4-step process has helped thousands of victims recover their stolen funds.
             </p>
           </div>
@@ -133,9 +133,9 @@ export default function About() {
             ].map((process, index) => (
               <Card key={index} className="relative">
                 <CardContent className="p-8 text-center">
-                  <div className="text-4xl font-bold text-blue-600 mb-4">{process.step}</div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">{process.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{process.description}</p>
+                  <div className="text-4xl font-bold text-primary mb-4">{process.step}</div>
+                  <h3 className="text-xl font-bold text-foreground mb-4">{process.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{process.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -147,8 +147,8 @@ export default function About() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">Meet Our Expert Team</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <h2 className="text-4xl font-bold text-foreground mb-6">Meet Our Expert Team</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Our team combines decades of experience in financial investigations, legal expertise, 
               and cybersecurity to deliver the best possible outcomes for our clients.
             </p>
@@ -159,14 +159,14 @@ export default function About() {
               <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-8">
                   <div className="flex items-start space-x-4">
-                    <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl">
                       {member.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
-                      <p className="text-blue-600 font-semibold mb-2">{member.role}</p>
-                      <p className="text-gray-600 mb-3">{member.experience}</p>
-                      <p className="text-gray-700">{member.description}</p>
+                      <h3 className="text-xl font-bold text-foreground mb-2">{member.name}</h3>
+                      <p className="text-primary font-semibold mb-2">{member.role}</p>
+                      <p className="text-muted-foreground mb-3">{member.experience}</p>
+                      <p className="text-foreground">{member.description}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -177,7 +177,7 @@ export default function About() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-20 bg-blue-600 text-white">
+      <section className="py-20 bg-primary text-primary-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-6">Why Choose ScamRecovery Pro?</h2>
@@ -204,7 +204,7 @@ export default function About() {
               <div key={index} className="text-center">
                 <feature.icon className="h-16 w-16 mx-auto mb-6" />
                 <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
-                <p className="text-blue-100 text-lg leading-relaxed">{feature.description}</p>
+                <p className="text-primary-foreground/80 text-lg leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>

@@ -119,23 +119,23 @@ export default function Services() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
               Our Recovery Services
             </h1>
-            <p className="text-xl lg:text-2xl text-blue-100 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl lg:text-2xl text-primary-foreground/80 max-w-4xl mx-auto leading-relaxed">
               Comprehensive scam recovery solutions for all types of financial fraud. 
               Our experts have successfully recovered millions in stolen funds.
             </p>
             <div className="mt-8">
               <Link to="/contact">
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
+                <Button size="lg" className="bg-background text-primary hover:bg-background/90 text-lg px-8 py-4">
                   Get Free Case Review
                 </Button>
               </Link>
@@ -148,8 +148,8 @@ export default function Services() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">Specialized Recovery Services</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <h2 className="text-4xl font-bold text-foreground mb-6">Specialized Recovery Services</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               No matter what type of scam you've fallen victim to, our specialized teams have the expertise to help you recover your funds.
             </p>
           </div>
@@ -159,24 +159,24 @@ export default function Services() {
               <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                      <service.icon className="h-6 w-6 text-white" />
+                    <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                      <service.icon className="h-6 w-6 text-primary-foreground" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-gray-900">{service.title}</CardTitle>
+                      <CardTitle className="text-xl text-foreground">{service.title}</CardTitle>
                     </div>
                   </div>
-                  <p className="text-gray-600 leading-relaxed">{service.description}</p>
+                  <p className="text-muted-foreground leading-relaxed">{service.description}</p>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-3">What We Cover:</h4>
+                      <h4 className="font-semibold text-foreground mb-3">What We Cover:</h4>
                       <ul className="space-y-2">
                         {service.features.map((feature, idx) => (
                           <li key={idx} className="flex items-center space-x-2">
-                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                            <span className="text-gray-700">{feature}</span>
+                            <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-muted-foreground">{feature}</span>
                           </li>
                         ))}
                       </ul>
@@ -185,12 +185,12 @@ export default function Services() {
                     <div className="flex justify-between items-center pt-4 border-t">
                       <div className="flex space-x-4">
                         <div>
-                          <p className="text-sm font-medium text-gray-600">Success Rate</p>
-                          <Badge className="bg-green-100 text-green-800">{service.successRate}</Badge>
+                          <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                          <Badge className="bg-primary/10 text-primary">{service.successRate}</Badge>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-600">Avg. Recovery</p>
-                          <Badge className="bg-blue-100 text-blue-800">{service.avgRecovery}</Badge>
+                          <p className="text-sm font-medium text-muted-foreground">Avg. Recovery</p>
+                          <Badge className="bg-primary/10 text-primary">{service.avgRecovery}</Badge>
                         </div>
                       </div>
                       <Link to="/contact">
@@ -209,11 +209,11 @@ export default function Services() {
       </section>
 
       {/* Process Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-muted/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">Our Recovery Process</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <h2 className="text-4xl font-bold text-foreground mb-6">Our Recovery Process</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               We follow a proven 4-step process that has helped thousands of victims recover their stolen funds.
             </p>
           </div>
@@ -222,15 +222,15 @@ export default function Services() {
             {process.map((step, index) => (
               <div key={index} className="text-center">
                 <div className="relative mb-8">
-                  <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto">
+                  <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto">
                     {step.step}
                   </div>
                   {index < process.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-blue-200 transform -translate-y-1/2"></div>
+                    <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-border transform -translate-y-1/2"></div>
                   )}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{step.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{step.description}</p>
+                <h3 className="text-xl font-bold text-foreground mb-4">{step.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{step.description}</p>
               </div>
             ))}
           </div>
@@ -238,21 +238,21 @@ export default function Services() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600 text-white">
+      <section className="py-20 bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Start Your Recovery?</h2>
-          <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+          <p className="text-xl text-primary-foreground/80 mb-8 leading-relaxed">
             Don't let scammers keep your hard-earned money. Contact us today for a free consultation 
             and let our experts help you get your funds back.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/contact">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
+              <Button size="lg" className="bg-background text-primary hover:bg-background/90 text-lg px-8 py-4">
                 Get Free Case Review
               </Button>
             </Link>
             <a href="tel:+15551234567">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4">
+              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary text-lg px-8 py-4">
                 Call Now: (555) 123-4567
               </Button>
             </a>

@@ -50,25 +50,25 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/50">
       <Header />
       
       <div className="py-20">
         <div className="max-w-md mx-auto px-4">
           <div className="text-center mb-8">
-            <Shield className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-gray-600 text-lg">Sign in to access your recovery dashboard</p>
+            <Shield className="h-16 w-16 text-primary mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
+            <p className="text-muted-foreground text-lg">Sign in to access your recovery dashboard</p>
           </div>
 
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="shadow-lg border-0 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-2xl text-center">Login to Your Account</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-lg font-medium text-gray-700 mb-2">
+                  <label className="block text-lg font-medium text-foreground mb-2">
                     Email Address
                   </label>
                   <Input
@@ -82,7 +82,7 @@ export default function Login() {
                 </div>
 
                 <div>
-                  <label className="block text-lg font-medium text-gray-700 mb-2">
+                  <label className="block text-lg font-medium text-foreground mb-2">
                     Password
                   </label>
                   <div className="relative">
@@ -107,7 +107,7 @@ export default function Login() {
                 <Button 
                   type="submit" 
                   size="lg" 
-                  className="w-full text-lg py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="w-full text-lg py-4 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                   disabled={loading}
                 >
                   {loading ? 'Signing In...' : 'Sign In'}
@@ -117,13 +117,13 @@ export default function Login() {
               <div className="mt-6 text-center space-y-4">
                 <Link 
                   to="/forgot-password" 
-                  className="block text-blue-600 hover:text-blue-800 font-medium"
+                  className="block text-primary hover:text-primary/80 font-medium"
                 >
                   Forgot your password?
                 </Link>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   Don't have an account?{' '}
-                  <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">
+                  <Link to="/register" className="text-primary hover:text-primary/80 font-medium">
                     Sign up here
                   </Link>
                 </p>

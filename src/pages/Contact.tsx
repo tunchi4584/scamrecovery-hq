@@ -172,23 +172,23 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/50">
       <Header />
       
       <div className="py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="flex justify-center items-center gap-3 mb-6">
-              <Gift className="h-16 w-16 text-green-600" />
-              <AlertTriangle className="h-16 w-16 text-red-600" />
+              <Gift className="h-16 w-16 text-primary" />
+              <AlertTriangle className="h-16 w-16 text-destructive" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">FREE Case Review & Recovery</h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
-              Submit your case details for a <span className="text-green-600 font-bold">completely free</span> initial review. 
+            <h1 className="text-4xl font-bold text-foreground mb-4">FREE Case Review & Recovery</h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-6">
+              Submit your case details for a <span className="text-primary font-bold">completely free</span> initial review. 
               Our expert team will evaluate your case and provide guidance at no cost.
             </p>
-            <div className="bg-green-100 border border-green-300 rounded-lg p-4 max-w-2xl mx-auto">
-              <p className="text-green-800 font-semibold">
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 max-w-2xl mx-auto">
+              <p className="text-primary font-semibold">
                 ✅ No upfront fees • ✅ Free consultation • ✅ Expert analysis • ✅ 24-hour response
               </p>
             </div>
@@ -197,8 +197,8 @@ export default function Contact() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Case Submission Form */}
             <div className="lg:col-span-2">
-              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-t-lg">
+              <Card className="shadow-xl border-0 bg-card/90 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-t-lg">
                   <CardTitle className="text-2xl flex items-center">
                     <FileText className="h-6 w-6 mr-2" />
                     Submit Your Case for FREE Review
@@ -208,7 +208,7 @@ export default function Contact() {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Full Name *
                         </label>
                         <Input
@@ -221,7 +221,7 @@ export default function Contact() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Email Address *
                         </label>
                         <Input
