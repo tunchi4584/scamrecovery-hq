@@ -212,49 +212,50 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/50">
       <Header />
       
       <div className="py-20">
         <div className="max-w-7xl mx-auto px-4">
           {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <div className="mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 animate-fade-in">
+            <div className="space-y-2">
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mb-3">
                 Welcome back, {profile?.name || 'User'}!
               </h1>
-              <p className="text-xl text-gray-600">Track your recovery cases and progress</p>
+              <p className="text-xl text-muted-foreground font-medium">Track your recovery cases and progress</p>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <CreateCaseModal onCaseCreated={handleRefresh} />
               <Button 
                 onClick={handleRefresh} 
                 disabled={refreshing}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
               >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 transition-transform duration-300 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? 'Refreshing...' : 'Refresh'}
               </Button>
             </div>
           </div>
 
           {/* Available Balance Section */}
-          <div className="mb-8">
-            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-lg">
-              <CardContent className="p-6">
+          <div className="mb-12 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-primary/20 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02]">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50"></div>
+              <CardContent className="relative p-8">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className="p-3 bg-green-100 rounded-lg">
-                      <DollarSign className="h-8 w-8 text-green-600" />
+                    <div className="p-4 bg-gradient-to-br from-primary/20 to-primary/30 rounded-2xl shadow-lg">
+                      <DollarSign className="h-10 w-10 text-primary" />
                     </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-green-700">Available Balance</p>
-                       <p className="text-3xl font-bold text-green-800">
+                    <div className="ml-6">
+                      <p className="text-sm font-semibold text-primary/70 uppercase tracking-wider">Available Balance</p>
+                       <p className="text-4xl font-bold text-primary mt-1">
                          ${balance?.amount_recovered ? Number(balance.amount_recovered).toLocaleString() : '0'}
                        </p>
-                       <p className="text-sm text-green-600 mt-1">Amount recovered (set by admin)</p>
+                       <p className="text-sm text-muted-foreground mt-2">Amount recovered (set by admin)</p>
                     </div>
                   </div>
                 </div>
@@ -263,75 +264,83 @@ export default function Dashboard() {
           </div>
 
           {/* Account Balance Section */}
-          <div className="mb-8">
+          <div className="mb-12 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <UserBalanceCard />
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             <Card 
-              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              className="group relative overflow-hidden bg-gradient-to-br from-card via-card to-muted/20 border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-fade-in"
+              style={{ animationDelay: '0.3s' }}
               onClick={() => setCurrentView('all_cases')}
             >
-              <CardContent className="p-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardContent className="relative p-8">
                 <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <FileText className="h-8 w-8 text-blue-600" />
+                  <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/30 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <FileText className="h-8 w-8 text-primary" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Cases</p>
-                    <p className="text-2xl font-bold text-gray-900">{cases.length}</p>
+                  <div className="ml-6">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Total Cases</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">{cases.length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              className="group relative overflow-hidden bg-gradient-to-br from-card via-card to-muted/20 border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-fade-in"
+              style={{ animationDelay: '0.4s' }}
               onClick={() => setCurrentView('pending_cases')}
             >
-              <CardContent className="p-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardContent className="relative p-8">
                 <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
+                  <div className="p-3 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <Clock className="h-8 w-8 text-yellow-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending Cases</p>
-                    <p className="text-2xl font-bold text-gray-900">{pendingCases}</p>
+                  <div className="ml-6">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pending Cases</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">{pendingCases}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              className="group relative overflow-hidden bg-gradient-to-br from-card via-card to-muted/20 border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-fade-in"
+              style={{ animationDelay: '0.5s' }}
               onClick={() => setCurrentView('in_progress_cases')}
             >
-              <CardContent className="p-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardContent className="relative p-8">
                 <div className="flex items-center">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Activity className="h-8 w-8 text-purple-600" />
+                  <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Activity className="h-8 w-8 text-blue-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">In Progress</p>
-                    <p className="text-2xl font-bold text-gray-900">{inProgressCases}</p>
+                  <div className="ml-6">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">In Progress</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">{inProgressCases}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-white/80 backdrop-blur-sm border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+              className="group relative overflow-hidden bg-gradient-to-br from-card via-card to-muted/20 border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-fade-in"
+              style={{ animationDelay: '0.6s' }}
               onClick={() => setCurrentView('completed_cases')}
             >
-              <CardContent className="p-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardContent className="relative p-8">
                 <div className="flex items-center">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
+                  <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <TrendingUp className="h-8 w-8 text-emerald-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Completed</p>
-                    <p className="text-2xl font-bold text-gray-900">{completedCases}</p>
+                  <div className="ml-6">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Completed</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">{completedCases}</p>
                   </div>
                 </div>
               </CardContent>
@@ -339,17 +348,19 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Cases List */}
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader>
+          <Card className="bg-gradient-to-br from-card via-card to-muted/10 border-0 shadow-2xl animate-fade-in" style={{ animationDelay: '0.7s' }}>
+            <CardHeader className="pb-6">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <FileText className="h-6 w-6 text-blue-600" />
+                <CardTitle className="text-3xl font-bold flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/30 rounded-lg">
+                    <FileText className="h-7 w-7 text-primary" />
+                  </div>
                   Recent Cases
                 </CardTitle>
                 <Button 
                   variant="outline" 
                   onClick={() => setCurrentView('all_cases')}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 >
                   View All Cases
                 </Button>
@@ -364,46 +375,52 @@ export default function Dashboard() {
                   <CreateCaseModal onCaseCreated={handleRefresh} />
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {cases.slice(0, 3).map((case_) => (
-                    <div key={case_.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="space-y-6">
+                  {cases.slice(0, 3).map((case_, index) => (
+                    <div 
+                      key={case_.id} 
+                      className="group relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/20 border border-primary/10 rounded-2xl p-8 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] animate-fade-in"
+                      style={{ animationDelay: `${0.8 + index * 0.1}s` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{case_.title}</h3>
-                            <Badge variant="outline" className="font-mono text-xs">
+                          <div className="flex items-center gap-4 mb-4">
+                            {getStatusIcon(case_.status)}
+                            <h3 className="text-xl font-bold text-foreground">{case_.title}</h3>
+                            <Badge variant="outline" className="font-mono text-xs bg-muted/50">
                               {case_.case_number || 'Generating...'}
                             </Badge>
-                            <Badge className={`${getStatusColor(case_.status)} font-medium`}>
+                            <Badge className={`${getStatusColor(case_.status)} font-semibold`}>
                               {getStatusLabel(case_.status)}
                             </Badge>
                           </div>
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                            <div>
-                              <p className="text-sm text-gray-600">Amount</p>
-                              <p className="text-lg font-semibold text-green-600">${Number(case_.amount).toLocaleString()}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+                            <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-xl">
+                              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Amount</p>
+                              <p className="text-2xl font-bold text-primary">${Number(case_.amount).toLocaleString()}</p>
                             </div>
-                            <div>
-                              <p className="text-sm text-gray-600">Created</p>
-                              <p className="text-sm font-medium">{new Date(case_.created_at).toLocaleDateString()}</p>
+                            <div className="bg-gradient-to-br from-muted/20 to-muted/30 p-4 rounded-xl">
+                              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Created</p>
+                              <p className="text-lg font-semibold text-foreground">{new Date(case_.created_at).toLocaleDateString()}</p>
                             </div>
                           </div>
 
                           {/* Progress Bar */}
-                          <div className="mt-4">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-medium text-gray-700">Progress</span>
-                              <span className="text-sm text-gray-600">{getProgressPercentage(case_.status)}%</span>
+                          <div className="mt-6">
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-sm font-bold text-foreground uppercase tracking-wider">Progress</span>
+                              <span className="text-lg font-bold text-primary">{getProgressPercentage(case_.status)}%</span>
                             </div>
-                            <Progress value={getProgressPercentage(case_.status)} className="h-2" />
+                            <Progress value={getProgressPercentage(case_.status)} className="h-3 bg-muted/30" />
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <CaseDetailsModal case_={case_}>
-                            <Button variant="outline" size="sm" className="flex items-center gap-2">
-                              <Eye className="h-4 w-4" />
+                            <Button variant="outline" size="lg" className="flex items-center gap-3 transition-all duration-300 hover:scale-105 hover:shadow-lg bg-gradient-to-r from-primary/5 to-primary/10">
+                              <Eye className="h-5 w-5" />
                               View Details
                             </Button>
                           </CaseDetailsModal>
