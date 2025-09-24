@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,9 +23,9 @@ import {
   AlertTriangle,
   DollarSign,
   FileText,
-  Upload,
-  X,
-  Gift
+  Gift,
+  Info,
+  Loader2
 } from 'lucide-react';
 
 export default function Contact() {
@@ -33,65 +35,67 @@ export default function Contact() {
   const { contacts } = useContacts();
   
   const [formData, setFormData] = useState({
-    name: profile?.name || '',
-    email: profile?.email || '',
-    phone: '',
-    scamType: '',
-    amountLost: '',
+    title: '',
     description: '',
-    evidence: ''
+    amount: '',
+    currency: 'USD',
+    scam_type: '',
+    incident_date: ''
   });
   const [loading, setLoading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const scamTypes = [
-    'Investment Scam',
-    'Romance Scam', 
-    'Tech Support Scam',
+    'Romance Scam',
+    'Investment Fraud',
     'Cryptocurrency Scam',
-    'Online Shopping Scam',
+    'Phone/SMS Scam',
+    'Email Phishing',
     'Identity Theft',
-    'Phishing Scam',
+    'Online Shopping Fraud',
+    'Tech Support Scam',
+    'Advance Fee Fraud',
     'Business Email Compromise',
     'Other'
   ];
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const validFiles = files.filter(file => {
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      const allowedTypes = ['image/', 'application/pdf', 'text/', '.doc', '.docx'];
-      
-      if (file.size > maxSize) {
-        toast({
-          title: "File too large",
-          description: `${file.name} is larger than 10MB`,
-          variant: "destructive"
-        });
-        return false;
-      }
-      
-      const isAllowed = allowedTypes.some(type => 
-        file.type.startsWith(type) || file.name.toLowerCase().includes(type.replace('.', ''))
-      );
-      
-      if (!isAllowed) {
-        toast({
-          title: "Invalid file type",
-          description: `${file.name} is not a supported file type`,
-          variant: "destructive"
-        });
-        return false;
-      }
-      
-      return true;
-    });
-    
-    setUploadedFiles(prev => [...prev, ...validFiles]);
-  };
+  const currencies = [
+    { value: 'USD', label: '$ USD - US Dollar' },
+    { value: 'EUR', label: '€ EUR - Euro' },
+    { value: 'GBP', label: '£ GBP - British Pound' },
+    { value: 'CAD', label: '$ CAD - Canadian Dollar' },
+    { value: 'AUD', label: '$ AUD - Australian Dollar' },
+    { value: 'JPY', label: '¥ JPY - Japanese Yen' },
+    { value: 'CHF', label: 'CHF - Swiss Franc' },
+    { value: 'BTC', label: '₿ BTC - Bitcoin' },
+    { value: 'ETH', label: 'Ξ ETH - Ethereum' },
+    { value: 'USDT', label: '₮ USDT - Tether' },
+    { value: 'BNB', label: 'BNB - Binance Coin' },
+    { value: 'XRP', label: 'XRP - Ripple' },
+    { value: 'ADA', label: 'ADA - Cardano' },
+    { value: 'DOGE', label: 'DOGE - Dogecoin' },
+    { value: 'LTC', label: 'LTC - Litecoin' },
+    { value: 'OTHER', label: 'Other Currency' }
+  ];
 
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Remove any non-numeric characters except forward slashes
+    const cleaned = value.replace(/[^\d/]/g, '');
+    
+    // Format as MM/DD/YYYY
+    let formatted = cleaned;
+    if (cleaned.length >= 2 && cleaned.indexOf('/') === -1) {
+      formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+    }
+    if (cleaned.length >= 5 && cleaned.split('/').length === 2) {
+      const parts = cleaned.split('/');
+      formatted = parts[0] + '/' + parts[1].slice(0, 2) + '/' + parts[1].slice(2);
+    }
+    
+    // Limit length to MM/DD/YYYY format
+    if (formatted.length <= 10) {
+      setFormData(prev => ({ ...prev, incident_date: formatted }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,71 +103,94 @@ export default function Contact() {
     
     if (!user) {
       toast({
-        title: "Create Free Account",
-        description: "Sign up for free to submit your case for review.",
-        variant: "default"
+        title: "Authentication Required",
+        description: "Please log in to create a case.",
+        variant: "destructive"
       });
       navigate('/register');
       return;
     }
-    
-    setLoading(true);
 
+    // Validate required fields
+    if (!formData.title.trim() || !formData.description.trim() || !formData.amount || !formData.scam_type) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount greater than 0.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    
     try {
-      // Prepare evidence with file information
-      let evidenceText = formData.evidence;
-      if (uploadedFiles.length > 0) {
-        const fileList = uploadedFiles.map(file => `${file.name} (${(file.size / 1024).toFixed(1)}KB)`).join(', ');
-        evidenceText += `\n\nAttached files: ${fileList}`;
+      // Convert date from MM/DD/YYYY to YYYY-MM-DD if provided
+      let formattedDate = null;
+      if (formData.incident_date) {
+        const dateParts = formData.incident_date.split('/');
+        if (dateParts.length === 3) {
+          const [month, day, year] = dateParts;
+          formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
       }
 
-      // Create submission
-      const { data: submission, error: submissionError } = await supabase
-        .from('submissions')
-        .insert({
-          user_id: user.id,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          scam_type: formData.scamType,
-          amount_lost: parseFloat(formData.amountLost) || 0,
-          description: formData.description,
-          evidence: evidenceText
-        })
-        .select()
-        .single();
-
-      if (submissionError) throw submissionError;
-
-      // Case creation removed - will be handled separately
-
-      toast({
-        title: "Free Case Review Submitted!",
-        description: "Your case has been submitted for free review. We'll contact you within 24 hours.",
+      // Use the reliable create_case_simple function
+      const { data: result, error: functionError } = await supabase.rpc('create_case_simple', {
+        p_user_id: user.id,
+        p_title: formData.title.trim(),
+        p_description: formData.description.trim(),
+        p_scam_type: formData.scam_type,
+        p_amount: amount,
+        p_currency: formData.currency,
+        p_incident_date: formattedDate
       });
 
-      // Refresh user data to show the new case
-      await refreshUserData();
+      if (functionError) {
+        console.error('Function call error:', functionError);
+        throw new Error(functionError.message || 'Failed to create case');
+      }
+
+      // Parse the JSON result properly
+      const parsedResult = result as { success: boolean; case_number?: string; case_id?: string; error?: string };
       
+      if (!parsedResult || !parsedResult.success) {
+        throw new Error(parsedResult?.error || 'Failed to create case');
+      }
+
+      toast({
+        title: "Success!",
+        description: `Your case has been created successfully. Case Number: ${parsedResult.case_number}`,
+      });
+
       // Reset form
       setFormData({
-        name: profile?.name || '',
-        email: profile?.email || '',
-        phone: '',
-        scamType: '',
-        amountLost: '',
+        title: '',
         description: '',
-        evidence: ''
+        amount: '',
+        currency: 'USD',
+        scam_type: '',
+        incident_date: ''
       });
-      setUploadedFiles([]);
-
-      // Redirect to dashboard
+      
+      // Refresh user data and redirect to dashboard
+      await refreshUserData();
       navigate('/dashboard');
-    } catch (error: any) {
-      console.error('Error submitting case:', error);
+
+    } catch (error) {
+      console.error('Error creating case:', error);
       toast({
-        title: "Submission Failed",
-        description: error.message || "Failed to submit your case. Please try again.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create case. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -206,59 +233,74 @@ export default function Contact() {
                 </CardHeader>
                 <CardContent className="p-8">
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Full Name *
-                        </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <Label htmlFor="title" className="text-sm font-medium">Case Title *</Label>
                         <Input
-                          type="text"
+                          id="title"
+                          value={formData.title}
+                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Brief description of your case"
                           required
-                          value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          placeholder="Enter your full name"
-                          className="text-lg py-3"
+                          className="mt-1"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Email Address *
-                        </label>
-                        <Input
-                          type="email"
-                          required
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          placeholder="Enter your email"
-                          className="text-lg py-3"
-                        />
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Phone Number
-                        </label>
-                        <Input
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                          placeholder="Enter your phone number"
-                          className="text-lg py-3"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Type of Scam *
-                        </label>
-                        <Select value={formData.scamType} onValueChange={(value) => setFormData({...formData, scamType: value})}>
-                          <SelectTrigger className="text-lg py-3">
-                            <SelectValue placeholder="Select scam type" />
+                        <Label htmlFor="scam_type" className="text-sm font-medium">Scam Type *</Label>
+                        <Select value={formData.scam_type} onValueChange={(value) => setFormData(prev => ({ ...prev, scam_type: value }))}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select the type of scam" />
                           </SelectTrigger>
                           <SelectContent>
                             {scamTypes.map((type) => (
-                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                              <SelectItem key={type} value={type}>
+                                {type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="incident_date" className="text-sm font-medium">Incident Date (MM/DD/YYYY)</Label>
+                        <Input
+                          id="incident_date"
+                          type="text"
+                          value={formData.incident_date}
+                          onChange={handleDateChange}
+                          placeholder="MM/DD/YYYY"
+                          maxLength={10}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="amount" className="text-sm font-medium">Amount Lost *</Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.amount}
+                          onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                          placeholder="0.00"
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="currency" className="text-sm font-medium">Currency *</Label>
+                        <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {currencies.map((currency) => (
+                              <SelectItem key={currency.value} value={currency.value}>
+                                {currency.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -266,113 +308,108 @@ export default function Contact() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Amount Lost (USD) *
-                      </label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          type="number"
-                          required
-                          min="0"
-                          step="0.01"
-                          value={formData.amountLost}
-                          onChange={(e) => setFormData({...formData, amountLost: e.target.value})}
-                          className="pl-10 text-lg py-3"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Detailed Description *
-                      </label>
+                      <Label htmlFor="description" className="text-sm font-medium">Detailed Description *</Label>
                       <Textarea
-                        required
-                        rows={6}
+                        id="description"
                         value={formData.description}
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        placeholder="Please provide detailed information about the scam, including dates, how you were contacted, what happened, and any other relevant details..."
-                        className="resize-none text-lg"
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Describe what happened, how you were scammed, when it occurred, and any other relevant details..."
+                        rows={4}
+                        required
+                        className="mt-1 resize-none"
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Evidence/Additional Information & Media
-                      </label>
-                      <Textarea
-                        rows={4}
-                        value={formData.evidence}
-                        onChange={(e) => setFormData({...formData, evidence: e.target.value})}
-                        placeholder="Any additional evidence, screenshots, emails, transaction IDs, or other relevant information..."
-                        className="resize-none mb-4"
-                      />
-                      
-                      {/* File Upload Section */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*,.pdf,.doc,.docx,.txt"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          id="file-upload"
-                        />
-                        <label htmlFor="file-upload" className="cursor-pointer">
-                          <div className="text-center">
-                            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-lg font-medium text-gray-700">Upload Evidence Files</p>
-                            <p className="text-sm text-gray-500">Screenshots, PDFs, documents (max 10MB each)</p>
-                            <Button type="button" variant="outline" className="mt-2">
-                              Choose Files
-                            </Button>
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="space-y-2">
+                          <p className="font-medium">Evidence & Documentation Submission</p>
+                          <p className="text-sm">
+                            For evidence and documentation (screenshots, transaction IDs, emails, etc.), please submit them directly through our contact channels:
+                          </p>
+                          <div className="flex flex-col gap-3 mt-3">
+                            {contacts.map(contact => {
+                              const getIcon = () => {
+                                switch (contact.icon_type) {
+                                  case 'phone':
+                                    return <Phone className="h-4 w-4 text-green-600" />;
+                                  case 'email':
+                                    return <Mail className="h-4 w-4 text-gray-600" />;
+                                  case 'whatsapp':
+                                    return <MessageSquare className="h-4 w-4 text-green-600" />;
+                                  case 'telegram':
+                                    return <MessageSquare className="h-4 w-4 text-blue-500" />;
+                                  default:
+                                    return <Phone className="h-4 w-4 text-gray-600" />;
+                                }
+                              };
+
+                              const getHref = () => {
+                                switch (contact.platform) {
+                                  case 'phone':
+                                    return `tel:${contact.value}`;
+                                  case 'email':
+                                    return `mailto:${contact.value}`;
+                                  default:
+                                    return contact.value;
+                                }
+                              };
+
+                              const getClassName = () => {
+                                switch (contact.platform) {
+                                  case 'whatsapp':
+                                    return 'text-green-600 hover:underline';
+                                  case 'telegram':
+                                    return 'text-blue-500 hover:underline';
+                                  case 'email':
+                                    return 'text-gray-600 hover:underline';
+                                  default:
+                                    return 'text-gray-600 hover:underline';
+                                }
+                              };
+
+                              return (
+                                <div key={contact.id} className="flex items-center gap-2 text-sm">
+                                  {getIcon()}
+                                  <span className="font-medium">{contact.label}:</span>
+                                  <a 
+                                    href={getHref()} 
+                                    target={contact.value.startsWith('http') ? '_blank' : undefined}
+                                    rel={contact.value.startsWith('http') ? 'noopener noreferrer' : undefined}
+                                    className={getClassName()}
+                                  >
+                                    {contact.platform === 'telegram' && contact.value.includes('t.me') 
+                                      ? contact.value.split('/').pop() 
+                                      : contact.value
+                                    }
+                                  </a>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </label>
-                      </div>
-                      
-                      {/* Uploaded Files Display */}
-                      {uploadedFiles.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                          <p className="text-sm font-medium text-gray-700">Uploaded Files:</p>
-                          {uploadedFiles.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                              <div className="flex items-center space-x-2">
-                                <FileText className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm text-gray-700">{file.name}</span>
-                                <span className="text-xs text-gray-500">({(file.size / 1024).toFixed(1)}KB)</span>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeFile(index)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Please include your case number in your correspondence for faster processing.
+                          </p>
                         </div>
-                      )}
-                    </div>
+                      </AlertDescription>
+                    </Alert>
 
                     <Button 
                       type="submit" 
                       size="lg" 
-                      className="w-full text-lg py-4 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                      disabled={loading}
+                      className="w-full text-lg py-4 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                      disabled={loading || !formData.title || !formData.description || !formData.amount || !formData.scam_type}
                     >
                       {loading ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Submitting for FREE Review...
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Creating Case...
                         </>
                       ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
-                          Submit for FREE Case Review
+                          Create Case
                         </>
                       )}
                     </Button>
