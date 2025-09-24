@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   Shield,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -26,6 +27,7 @@ const navigationItems = [
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'User Accounts', href: '/admin/user-accounts', icon: UserCog },
   { name: 'Balance Tracker', href: '/admin/balances', icon: DollarSign },
+  { name: 'Case Submissions', href: '/admin/submissions', icon: FileText },
 ];
 
 export function AdminLayout({ children, title }: AdminLayoutProps) {
